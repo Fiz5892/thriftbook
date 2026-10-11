@@ -1,125 +1,267 @@
+<div align="center">
+
 # thriftbook.
 
-Jual, hibah, dan tukar buku kuliah bekas antar sivitas Universitas Negeri Malang.
-Spesifikasi lengkap: [docs/PRD-thriftbook.md](docs/PRD-thriftbook.md).
+**Papan buku kuliah bekas untuk mahasiswa Universitas Negeri Malang.**
+Jual, hibah, atau tukar buku yang sudah tidak terpakai. Cari per prodi dan mata kuliah, lalu
+chat lewat WhatsApp dan ketemuan COD di kampus.
 
-## Status fitur (terhadap PRD §3)
+![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs)
+![React 19](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=black)
+![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-3ecf8e?logo=supabase&logoColor=white)
+![Tailwind 4](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss&logoColor=white)
+![Biaya](https://img.shields.io/badge/biaya%20operasional-Rp0-fdd94e)
 
-Semua fitur Must, Should, dan Could di PRD sudah diimplementasikan. Kolom "Diuji" menyebut
-bukti yang ada; yang tertulis "belum" memang belum pernah dijalankan.
+![thriftbook landing page](docs/screenshots/hero-desktop.png)
 
-| ID | Fitur | Diuji |
-|---|---|---|
-| FR-01 | Login Google UM + cek domain persis | Logika + trigger DB diuji. **Alur OAuth Google asli belum** |
-| FR-02 | Onboarding (profil, WA, persetujuan) | Browser (e2e) |
-| FR-03 | Keluar, keluar dari semua perangkat | Keluar diuji; "semua perangkat" belum |
-| FR-04/05 | Posting, foto (kompres klien, re-encode server, EXIF dibuang), draf `localStorage`, jadikan sampul | Browser (e2e) |
-| FR-06/07 | Edit, hapus (konfirmasi), dipesan, selesai + jawaban "lewat thriftbook?", aktifkan lagi | Browser (e2e) |
-| FR-08/09/10 | Beranda, cari (filter, semester, harga maks, termurah, relevan, **toleran salah ketik**), detail | Browser (e2e) |
-| FR-11 | Kontak WhatsApp (server membentuk wa.me, rate limit, tercatat) | Browser + DB |
-| FR-12/13 | Dicari + pencocokan dengan listing | Browser (e2e) |
-| FR-14 | Lapor, auto-hide 3 pelapor (trigger DB + fallback aplikasi) | Browser + DB |
-| FR-15/16 | Panel moderasi, blokir/buka blokir, riwayat append-only, anomali kontak | Browser (e2e) |
-| FR-17/18 | Akun, unduh data, hapus akun (cascade + foto) | Browser (e2e) |
-| FR-19 | Kedaluwarsa otomatis (cron HTTP) | Endpoint diuji; **jadwal Vercel belum** (butuh deploy) |
-| FR-20 | Syarat, Privasi, Panduan COD, Tentang | **Draf**, belum ditinjau pihak hukum |
-| FR-21 | Open Graph, sitemap, robots, tombol Bagikan | Diuji |
-| FR-22 | PWA (manifest, ikon, service worker offline) | Manifest ter-build; **instal & service worker di produksi belum diuji** |
-| FR-23 | Event metrik (termasuk `search_performed` tanpa identitas) | Browser + DB |
-| FR-24 | Chip "Mata kuliah terbanyak" | Kode ada; tidak punya tes otomatis |
+</div>
 
-## Hasil pengukuran (build produksi setelah restyle, Lighthouse mobile, median 3 run)
+---
 
-Diukur dari `localhost` ke database Supabase, tanpa CDN, jadi **TTFB cenderung pesimistis**
-(±600 ms, dominan oleh perjalanan ke database). Ukur ulang setelah deploy di region dekat database.
+## Daftar isi
 
-| Halaman | Performa | Aksesibilitas | SEO | Best practices | LCP | TBT | Transfer |
-|---|---|---|---|---|---|---|---|
-| Landing (tamu) | 86 | 100 | 100 | 100 | 3,09 dtk | 354 ms | 270 KB |
-| Cari | 92 | 100 | 100 | 100 | 3,28 dtk | 98 ms | 287 KB |
-| Dicari | 95 | 100 | 100 | 100 | 2,79 dtk | 77 ms | 270 KB |
-| Detail buku | 89 | 100 | 100 | 100 | 3,41 dtk | 164 ms | 296 KB |
+- [Masalah yang ingin diselesaikan](#masalah-yang-ingin-diselesaikan)
+- [Cara kerja untuk pengguna](#cara-kerja-untuk-pengguna)
+- [Fitur](#fitur)
+- [Tampilan](#tampilan)
+- [Keamanan dan privasi](#keamanan-dan-privasi)
+- [Tech stack](#tech-stack)
+- [Menjalankan secara lokal](#menjalankan-secara-lokal)
+- [Struktur proyek](#struktur-proyek)
+- [Pengujian](#pengujian)
+- [Deploy](#deploy)
+- [Dokumentasi lain](#dokumentasi-lain)
+- [Batasan yang diketahui](#batasan-yang-diketahui)
+- [Tentang proyek](#tentang-proyek)
 
-| Target PRD | Hasil |
+## Masalah yang ingin diselesaikan
+
+Mahasiswa baru sering kesulitan menemukan buku kuliah dengan harga terjangkau, sementara kakak
+tingkat punya buku bekas yang menganggur tetapi tidak punya wadah khusus untuk menyalurkannya.
+Saat ini keduanya bertemu lewat menfess di X, yang unggahannya cepat tenggelam, sulit dicari
+per mata kuliah, dan tidak terstruktur.
+
+> Pertanyaan yang dijawab proyek ini: *bagaimana mempertemukan pemilik dan pencari buku kuliah
+> bekas di satu kampus secara cepat, murah, dan terstruktur?*
+
+Thriftbook sengaja **tidak** menjadi marketplace penuh: tidak ada pembayaran di aplikasi, chat
+sendiri, atau ongkir. Transaksi tetap terjadi lewat WhatsApp dan COD di kampus, sehingga yang
+dibangun hanyalah bagian yang benar-benar hilang, yaitu katalog yang rapi dan bisa dicari.
+
+## Cara kerja untuk pengguna
+
+```
+Masuk dengan akun Google UM  →  Cari buku / pajang bukumu  →  Chat lewat WhatsApp  →  COD di kampus
+                                          │                                              │
+                              Belum ada? Pasang "Dicari"                       Tandai "Selesai"
+```
+
+1. **Masuk** dengan akun Google kampus (`@students.um.ac.id` atau `@um.ac.id`). Tidak ada
+   password baru, dan semua pengguna terverifikasi warga UM.
+2. **Cari** buku berdasarkan judul, mata kuliah, prodi, semester, kondisi, atau harga. Atau
+   **pajang** bukumu: cukup foto, judul, kondisi, dan pilih jual, hibah, atau tukar.
+3. **Chat** penjual lewat tombol WhatsApp. Pesannya sudah terisi judul buku.
+4. **Ketemuan** di kampus, cek bukunya, baru bayar. Tandai buku **Selesai** supaya tidak
+   ditanyai lagi.
+5. Belum ada bukunya? Pasang **Dicari** selama 30 hari. Pemilik buku yang menemukannya bisa
+   langsung menghubungimu.
+
+## Fitur
+
+**Untuk pencari dan pemilik buku**
+
+| Fitur | Keterangan |
 |---|---|
-| NFR-06 performa ≥ 85 | **Tercapai** (86–95) |
-| NFR-15 aksesibilitas ≥ 95, NFR-24 SEO ≥ 95 | **Tercapai** (100, 100) |
-| NFR-04 transfer muat pertama ≤ 700 KB | **Tercapai** (≤ 300 KB) |
-| NFR-02 CLS ≤ 0,1 | **Tercapai** (0) |
-| **NFR-01 LCP ≤ 2,5 dtk** | **Belum tercapai** (2,8–3,4 dtk). Restyle menambah ±55 KB (huruf display Unbounded) |
-| axe WCAG 2.2 AA, 16 halaman | 0 temuan, kecuali 1 *target-size* di /jual yang muncul karena bottom nav sticky menutupi radio pada posisi scroll audit. Uji fokus keyboard: 21 kontrol di /jual tidak pernah tertutup saat difokus (`scroll-padding`) |
+| Landing page | Tamu melihat penjelasan produk dengan motion yang mengikuti scroll; yang sudah masuk langsung ke katalog |
+| Jual, hibah, tukar | Harga hanya diminta untuk jual. Tukar mencatat buku apa yang diinginkan |
+| Cari dan filter | Judul, mata kuliah, prodi, semester, kondisi, tipe, harga maksimal, termurah, paling relevan |
+| Toleran salah ketik | "basisdata" atau "bsis data" tetap menemukan "Basis Data" |
+| Kondisi 4 tingkat | Seperti baru, Baik, Layak, Banyak coretan, masing-masing dengan definisi yang jelas |
+| Foto otomatis dioptimasi | Dikompres di perangkat, lalu dire-encode di server ke WebP, dengan metadata EXIF/GPS dibuang |
+| Dicari | Permintaan buku 30 hari, dicocokkan dengan listing yang ada |
+| Status buku | Tersedia, Dipesan, Selesai, dan otomatis Kedaluwarsa setelah 60 hari |
+| Draf form | Isian posting tersimpan bila halaman tertutup atau koneksi putus |
+| Bagikan | Web Share API, dengan cadangan salin tautan |
+| Unduh data dan hapus akun | Hak pengguna atas datanya, termasuk penghapusan foto |
+| PWA | Bisa dipasang ke layar utama, dengan halaman offline |
+
+**Untuk moderator**
+
+| Fitur | Keterangan |
+|---|---|
+| Laporan | Tujuh alasan, satu laporan per pengguna per target, batas 10 per hari |
+| Auto-hide | Listing disembunyikan otomatis setelah 3 pelapor berbeda sampai ditinjau |
+| Panel moderasi | Antrean laporan, sembunyikan atau tampilkan, blokir atau buka blokir, wajib menulis alasan |
+| Riwayat tindakan | Append-only: tidak bisa diubah atau dihapus |
+| Metrik | Listing dihubungi, tersalurkan lewat thriftbook, Dicari terpenuhi, pencarian tanpa hasil |
+| Deteksi kontak mencurigakan | Akun yang membuka terlalu banyak kontak ditandai |
 
 ## Tampilan
 
-- Sistem desain di `src/app/globals.css`: kertas krem, garis tinta 2px, bayangan keras, aksen pastel
-  (mint, pink, lilac, oranye) di atas identitas biru tua + kuning. Kelas: `card`, `btn` (`btn-yellow`,
-  `btn-ink`, `btn-outline`, `btn-wa`, `btn-danger`, `btn-sm`), `chip`, `input`, `badge`, `notice`,
-  `alert-danger`, `option`. Pakai kelas ini, jangan menulis ulang gaya tombol per halaman.
-- Huruf: Unbounded untuk judul (`h1`, `h2`, `.font-display`), Poppins untuk teks.
-- Maskot **Tibo** (`src/components/mascot.tsx`): SVG murni dengan ekspresi `happy`, `wave`, `search`,
-  `oops`, `cheer`. Dipakai di landing, beranda, masuk, state kosong, 404, dan error.
-- Navigasi: header atas di desktop; bottom nav hanya di layar < 768px.
-- Landing page (`/` untuk tamu). Pengguna yang sudah masuk melihat beranda katalog di `/`.
-- Motion (`src/components/motion.tsx`): jejak garis yang tergambar mengikuti scroll dengan maskot
-  berjalan di atasnya, pita teks yang bergerak sesuai scroll, parallax hero, dan "pop-in" saat elemen
-  masuk layar. Semua transform diset lewat CSSOM (aman untuk CSP tanpa `unsafe-inline`) dan mati
-  otomatis bila pengguna memilih *reduce motion*.
+Gaya visual neo-brutalist yang ceria: kertas krem, garis tinta tebal, bayangan keras, dan aksen
+pastel di atas identitas biru tua dan kuning. Di desktop navigasi ada di atas; di layar kecil
+berpindah ke bilah bawah. Maskot **Tibo** (buku kecil berwajah) menemani halaman kosong, error, dan
+landing.
 
-## Perintah
+| Landing (desktop) | Landing (mobile) |
+|---|---|
+| ![Hero](docs/screenshots/hero-desktop.png) | ![Mobile](docs/screenshots/landing-mobile.png) |
+
+| Cara kerja, dengan maskot yang berjalan mengikuti scroll | Katalog dan filter |
+|---|---|
+| ![Cara kerja](docs/screenshots/cara-kerja.png) | ![Katalog](docs/screenshots/katalog.png) |
+
+| Halaman buku (tampilan pemilik) | Masuk |
+|---|---|
+| ![Detail](docs/screenshots/detail-pemilik.png) | ![Masuk](docs/screenshots/masuk.png) |
+
+> Tangkapan layar memakai data contoh fiktif.
+
+## Keamanan dan privasi
+
+Aplikasi ini memegang nomor WhatsApp mahasiswa, jadi keamanan menjadi bagian inti desain, bukan
+tambahan. Ringkasannya:
+
+- **Nomor WhatsApp tidak pernah dirender di halaman.** Nomor hanya dikirim sebagai tautan `wa.me`
+  yang dibentuk server, untuk pengguna yang login dan mengetuk tombol chat, dibatasi 30 pembukaan
+  per akun per hari dan 5 per menit, dan setiap pembukaan dicatat.
+- **Login dibatasi akun kampus.** Pencocokan domain email dilakukan persis (bukan `endsWith`),
+  berlapis di aplikasi dan di trigger database, sehingga tidak bisa dilewati dengan memanggil API
+  langsung.
+- **Otorisasi di database (Row Level Security).** Pengguna hanya bisa mengubah atau menghapus
+  miliknya; kolom moderasi, peran, dan status blokir dilindungi trigger.
+- **Unggahan foto divalidasi dari isi file**, bukan ekstensi, lalu dire-encode sehingga metadata
+  (termasuk lokasi GPS) hilang. Nama file acak.
+- **CSP bernonce** dan header keamanan lain, validasi input di server dengan zod, proteksi CSRF
+  pada route yang mengubah data, dan tidak ada kunci rahasia di kode klien.
+- **Akun diblokir** dicabut sesinya di level Auth dan hash email-nya disimpan (HMAC), sehingga
+  tidak bisa mendaftar ulang lewat hapus akun.
+- **Minimisasi data.** Tidak menyimpan NIM, foto profil Google, atau lokasi. Retensi dijalankan
+  otomatis oleh cron harian.
+
+Model ancaman dan pemetaan ke OWASP Top 10 serta ASVS Level 1 ada di
+[PRD §7](docs/PRD-thriftbook.md).
+
+## Tech stack
+
+| Lapisan | Pilihan | Alasan singkat |
+|---|---|---|
+| Framework | Next.js 16 (App Router), React 19, TypeScript | Satu bahasa untuk UI dan server; mudah diwariskan |
+| UI | Tailwind CSS 4, Poppins + Unbounded | Sistem desain kecil di `globals.css` |
+| Database dan Auth | Supabase (Postgres, Google OAuth, Storage) | RLS bisa diuji; gratis tanpa kartu kredit |
+| Pencarian | `ILIKE` berindeks trigram + fuzzy di server | Cukup untuk skala satu kampus |
+| Gambar | `sharp` di server, `browser-image-compression` di klien | Foto adalah beban storage terbesar |
+| Validasi | zod | Skema yang sama untuk form dan server |
+| Hosting | Vercel Hobby (rencana) | Gratis; cron harian bawaan |
+| Pengujian | `node:test`, test RLS ke database nyata | Tanpa dependensi tambahan |
+
+Perbandingan opsi stack dan angka batas free tier ada di [PRD §8](docs/PRD-thriftbook.md).
+
+## Menjalankan secara lokal
+
+**Prasyarat:** Node.js 22.18 atau lebih baru (unit test memakai type-stripping bawaan Node), akun [Supabase](https://supabase.com) (gratis), dan
+OAuth client Google Cloud.
 
 ```bash
+git clone https://github.com/Fiz5892/thriftbook.git
+cd thriftbook
 npm install
-cp .env.example .env        # isi nilainya; NEXT_PUBLIC_SUPABASE_URL = https://<ref>.supabase.co (tanpa /rest/v1)
-npm run dev                 # http://localhost:3000
-npm test                    # unit test: domain email, WA, skema, bajakan, fuzzy
-npm run test:rls            # 24 test RLS terhadap DB nyata (membuat pengguna uji lalu menghapusnya)
-npm run typecheck && npm run lint
+cp .env.example .env     # lalu isi nilainya, lihat tabel di bawah
+npm run dev              # http://localhost:3000
 ```
 
-## Migrasi database (jalankan berurutan di SQL Editor Supabase)
+### Variabel lingkungan
 
-1. `0001_init.sql`: skema, RLS, trigger, RPC kontak WA
-2. `0002_log_event.sql`: pencatatan metrik
-3. `0003_fix_autohide.sql`: perbaikan bug auto-hide 3 laporan (trigger proteksi kolom membatalkannya).
-   Aplikasi punya fallback di kode, tetapi jalankan migrasi ini agar jalur insert langsung ikut ter-hide.
+| Variabel | Keterangan |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://<project-ref>.supabase.co`, **tanpa** `/rest/v1` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Kunci publik Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Rahasia.** Hanya di server |
+| `NEXT_PUBLIC_SITE_URL` | URL situs, dipakai untuk tautan dan sitemap |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Alamat kontak yang tampil di halaman Tentang |
+| `CRON_SECRET` | String acak panjang untuk melindungi endpoint cron |
+| `EMAIL_HASH_PEPPER` | String acak panjang untuk hash daftar blokir. Jangan diganti setelah ada akun diblokir |
+| `ALLOWED_EMAIL_DOMAINS` | Domain email yang boleh masuk, dipisah koma |
 
-## Yang harus dikerjakan manusia
+### Menyiapkan Supabase
 
-1. **Uji login Google UM sungguhan di browser.** Seluruh jalur sesudah login sudah diuji otomatis
-   dengan sesi yang diterbitkan service role. Yang belum: layar OAuth Google itu sendiri, termasuk
-   apakah Workspace UM mengizinkan aplikasi pihak ketiga (PRD R-01).
-2. Jadikan dirimu admin (sengaja tanpa UI, SEC-05):
+1. Buat proyek baru (pilih region terdekat dengan hosting).
+2. Jalankan berurutan isi folder [`supabase/migrations`](supabase/migrations) di SQL Editor:
+   `0001_init.sql`, `0002_log_event.sql`, `0003_fix_autohide.sql`.
+3. Buat bucket Storage bernama `listing-photos`: publik, batas ukuran 1 MB, hanya `image/webp`.
+4. Di Authentication, aktifkan provider **Google** dan **matikan** provider lain (email/password,
+   magic link, anonymous). Tambahkan `http://localhost:3000/auth/callback` ke Redirect URLs.
+5. Jadikan akunmu admin (sengaja tidak ada UI untuk ini):
    ```sql
-   update public.profiles set role = 'admin' where id = (select id from auth.users where email = 'EMAIL_KAMU');
+   update public.profiles set role = 'admin'
+   where id = (select id from auth.users where email = 'EMAIL_KAMU');
    ```
-   Aktifkan 2-Step Verification di akun Google itu.
-3. Konfirmasi domain email resmi ke UPT TIK UM (Q-03). Daftar domain ada di dua tempat dan harus
-   diubah bersamaan: `ALLOWED_EMAIL_DOMAINS` (env) dan fungsi `is_allowed_email` di migrasi.
-4. Isi `study_programs` dengan daftar prodi resmi UM (migrasi hanya berisi 4 prodi dari mockup).
-5. Tinjau `/syarat` dan `/kebijakan-privasi` dengan dosen pengampu (Q-08). Isi
-   `NEXT_PUBLIC_CONTACT_EMAIL` dan survei titik COD untuk `/panduan-cod` (Q-06).
-6. Deploy ke Vercel: isi semua env di `.env.example`, pastikan `CRON_SECRET` terisi, pilih region
-   dekat database, lalu jalankan `npm run build` sekali sebelum deploy.
-7. Setelah deploy: cek headers di securityheaders.com (target nilai A), instal PWA di HP, dan
-   pastikan cron harian berjalan (log Vercel).
-8. Backup mingguan: ikuti `.github/workflows/backup.yml` (secret `SUPABASE_DB_URL`, `AGE_PUBLIC_KEY`),
-   lalu **uji restore sekali** (SEC-82). Jalankan juga Security Advisor di dashboard Supabase (SEC-14).
-9. Rotasi password atau kredensial apa pun yang pernah ditempel di chat atau file.
 
-## Catatan teknis
+## Struktur proyek
 
-- Next.js 16 memakai `src/proxy.ts` (bukan `middleware.ts`). Baca `AGENTS.md` sebelum mengubah
-  konvensi framework.
-- `cacheComponents` dimatikan: CSP bernonce membutuhkan render dinamis, jadi seluruh halaman
-  dirender per request. Dampaknya ke kuota fungsi Vercel dibahas di PRD §8.4.
-- Kontak WA untuk listing lewat fungsi SQL `reveal_listing_contact` (atomik). Untuk Dicari lewat
-  route server dengan service role dan aturan yang sama (SEC-21).
-- Provider email/password Supabase **harus mati** (SEC-03). Tes dan skrip uji membuat sesi lewat
-  magic link yang diterbitkan service role, tanpa mengirim email.
-- Blokir = `profiles.banned_at` + ban di level Supabase Auth + hash email HMAC di `banned_emails`
-  (mencegah daftar ulang). Jangan ganti `EMAIL_HASH_PEPPER` setelah ada akun diblokir.
-- Pencarian: `ILIKE` per kata (indeks trigram); jika kosong, cadangan fuzzy di server
-  (`src/lib/fuzzy.ts`) atas maksimal 1000 listing aktif. Jika listing aktif jauh melampaui itu,
-  pindahkan ke fungsi `pg_trgm` di database.
-- Foto tidak bisa diganti di halaman edit (hapus lalu posting ulang). Keputusan MVP.
-- Jangan pernah memakai awalan `NEXT_PUBLIC_` untuk secret (SEC-70).
+```
+src/
+  app/                  Rute (App Router): halaman, server actions, route handler
+    page.tsx            Landing (tamu) atau beranda (sudah masuk)
+    cari/  dicari/  buku/[id]/  jual/  akun/  admin/  masuk/  onboarding/
+    api/                photos, kontak WhatsApp, ekspor data, cron
+    auth/callback/      Penukaran kode OAuth + pemeriksaan domain
+  components/           Kartu buku, navigasi, maskot, ikon, motion scroll
+  lib/                  Skema zod, klien Supabase, fuzzy search, helper WhatsApp
+  proxy.ts              Refresh sesi + CSP bernonce + header keamanan
+supabase/migrations/    Skema, RLS, trigger, fungsi SQL
+tests/                  Unit test dan test RLS
+docs/                   PRD, status implementasi, tangkapan layar
+```
+
+## Pengujian
+
+```bash
+npm test             # unit test: domain email, normalisasi WA, skema, fuzzy, deteksi bajakan
+npm run test:rls     # 24 test Row Level Security ke database nyata (butuh .env)
+npm run typecheck
+npm run lint
+```
+
+`test:rls` membuat beberapa pengguna uji, mengujinya sebagai klien biasa terhadap aturan akses,
+lalu menghapusnya. Jalankan hanya terhadap proyek Supabase milikmu sendiri.
+
+## Deploy
+
+1. Impor repo ke Vercel dan isi semua variabel di atas.
+2. Pastikan `CRON_SECRET` terisi. [`vercel.json`](vercel.json) menjadwalkan
+   `/api/cron/maintenance` setiap hari (kedaluwarsa listing, retensi data, pembersihan foto yatim).
+3. Tambahkan URL produksi ke Redirect URLs Supabase dan OAuth client Google.
+4. Cadangan database mingguan terenkripsi tersedia lewat
+   [`.github/workflows/backup.yml`](.github/workflows/backup.yml); petunjuk secret ada di
+   berkasnya.
+
+## Dokumentasi lain
+
+| Dokumen | Isi |
+|---|---|
+| [PRD](docs/PRD-thriftbook.md) | Kebutuhan fungsional, model data, threat model, rencana rilis, metrik |
+| [Status implementasi](docs/STATUS.md) | Fitur yang sudah diuji, hasil Lighthouse dan axe, daftar tindakan manual |
+
+## Batasan yang diketahui
+
+Daftar lengkap dan jujur ada di [docs/STATUS.md](docs/STATUS.md). Yang paling relevan bagi
+pembaca baru:
+
+- **Belum diuji dengan login Google UM sungguhan.** Jalur sesudah login diuji otomatis; layar
+  OAuth Google dan kebijakan Workspace UM belum.
+- **LCP di halaman berfoto sekitar 3 detik** pada simulasi Slow 4G (target 2,5 detik), sebagian
+  karena pengukuran dari `localhost` ke database. Perlu diukur ulang setelah deploy.
+- **Daftar prodi baru berisi 4 contoh** dari mockup; daftar resmi UM belum dimasukkan.
+- **Syarat Penggunaan dan Kebijakan Privasi masih draf** dan belum ditinjau pihak hukum.
+- **Foto tidak bisa diganti di halaman edit** (hapus lalu posting ulang).
+- **Pencarian fuzzy berjalan di server** atas maksimal 1000 listing aktif; jika katalog jauh
+  lebih besar, pindahkan ke `pg_trgm` di database.
+
+## Tentang proyek
+
+Dikerjakan oleh Kelompok 10 untuk mata kuliah **Manajemen Inovasi**, Universitas Negeri Malang,
+dengan pendekatan design thinking: *Empathize* dari unggahan menfess UM, *Define* masalah
+pencari dan pemilik buku, *Ideate* dan *Prototype* fitur inti, lalu *Test* bersama mahasiswa.
+
+Tambahkan nama anggota, lisensi, dan tautan demo di bagian ini bila sudah ditentukan.

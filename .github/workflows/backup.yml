@@ -1,0 +1,33 @@
+# Cadangan database mingguan (SEC-80). Paket gratis Supabase tidak punya backup yang bisa diunduh.
+# Setup sekali:
+#   1. Buat key age: `age-keygen -o kunci.txt` (simpan kunci.txt di password manager tim, JANGAN di repo).
+#   2. Tambahkan GitHub secrets: SUPABASE_DB_URL (connection string Postgres, mode session/direct)
+#      dan AGE_PUBLIC_KEY (baris "public key: age1..." dari langkah 1).
+name: backup-db
+on:
+  schedule:
+    - cron: "0 19 * * 6"   # Minggu 02.00 WIB
+  workflow_dispatch: {}
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pasang klien Postgres dan age
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client age
+      - name: Dump (skema public saja) lalu enkripsi
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          AGE_PUBLIC_KEY: ${{ secrets.AGE_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_DB_URL" && test -n "$AGE_PUBLIC_KEY"
+          pg_dump "$SUPABASE_DB_URL" --schema=public --no-owner --no-privileges \
+            | gzip -9 \
+            | age -r "$AGE_PUBLIC_KEY" -o "thriftbook-$(date -u +%Y%m%d).sql.gz.age"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: db-backup
+          path: "thriftbook-*.sql.gz.age"
+          retention-days: 30

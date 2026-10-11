@@ -1,9 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { IconShare } from "./icons";
 
 /** Web Share API dengan cadangan salin tautan (AC-21.3). */
-export function ShareButton({ title, path }: { title: string; path: string }) {
+export function ShareButton({
+  title,
+  path,
+  iconOnly = false,
+}: {
+  title: string;
+  path: string;
+  iconOnly?: boolean;
+}) {
   const [msg, setMsg] = useState<string | null>(null);
 
   async function share() {
@@ -22,14 +31,18 @@ export function ShareButton({ title, path }: { title: string; path: string }) {
   }
 
   return (
-    <div>
+    <span className="inline-flex items-center gap-2">
       <button
+        type="button"
         onClick={share}
-        className="btn btn-outline"
+        className={iconOnly ? "btn btn-icon btn-outline" : "btn btn-outline"}
+        aria-label={iconOnly ? "Bagikan" : undefined}
+        title={iconOnly ? "Bagikan" : undefined}
       >
-        Bagikan
+        <IconShare />
+        {!iconOnly && "Bagikan"}
       </button>
-      {msg && <p role="status" className="mt-2 text-sm text-muted">{msg}</p>}
-    </div>
+      {msg && <span role="status" className="text-sm text-muted">{msg}</span>}
+    </span>
   );
 }

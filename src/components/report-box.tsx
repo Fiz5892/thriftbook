@@ -1,11 +1,12 @@
 import { createReport } from "@/app/lapor/actions";
 import { REPORT_REASONS, REPORT_LABEL } from "@/lib/schemas";
+import { IconFlag } from "./icons";
 
 /** Form laporan tanpa JS: <details> + server action (FR-14). */
 export function ReportBox({ kind, targetId }: { kind: "listing" | "request"; targetId: string }) {
   return (
     <details className="card mt-8 p-4 text-sm">
-      <summary className="cursor-pointer font-semibold">Laporkan</summary>
+      <summary className="flex cursor-pointer items-center gap-2 font-semibold"><IconFlag className="size-4" />Laporkan</summary>
       <form action={createReport} className="mt-3 flex flex-col gap-3">
         <input type="hidden" name="kind" value={kind} />
         <input type="hidden" name="targetId" value={targetId} />

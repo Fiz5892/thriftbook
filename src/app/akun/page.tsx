@@ -5,6 +5,7 @@ import { rupiah, timeAgo } from "@/lib/format";
 import { signOut, signOutEverywhere } from "./actions";
 import { setListingStatus } from "../buku/[id]/actions";
 import { DoneChoice } from "@/components/done-choice";
+import { IconBookmark } from "@/components/icons";
 
 const STATUS_LABEL: Record<string, string> = {
   aktif: "Aktif", dipesan: "Dipesan", selesai: "Selesai", kedaluwarsa: "Kedaluwarsa",
@@ -95,6 +96,7 @@ export default async function AkunPage() {
                     <form action={setListingStatus}>
                       <input type="hidden" name="id" value={l.id} />
                       <button name="status" value="dipesan" className="btn btn-outline btn-sm">
+                        <IconBookmark className="size-4" />
                         Dipesan
                       </button>
                     </form>

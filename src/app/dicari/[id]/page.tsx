@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { BookCard, CARD_SELECT, type CardListing } from "@/components/book-card";
 import { ReportBox } from "@/components/report-box";
 import { ConfirmButton } from "@/components/confirm-button";
+import { IconCheck, IconClose, IconRefresh } from "@/components/icons";
 import { ContactButton } from "@/app/buku/[id]/contact-button";
 import { rupiah, timeAgo } from "@/lib/format";
 import { nowMs } from "@/lib/time";
@@ -54,7 +55,6 @@ export default async function DicariDetail({
   const meta = [r.course_name_snapshot, prodi, r.semester ? `Semester ${r.semester}` : null]
     .filter(Boolean).join(" · ");
   const daysLeft = Math.ceil((new Date(r.expires_at).getTime() - nowMs()) / 86400_000);
-  const btn = "btn btn-outline";
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-4">
@@ -85,29 +85,39 @@ export default async function DicariDetail({
             {STATUS_LABEL[r.status] ?? "Sudah tidak aktif"}.
           </p>
         ) : isOwner ? (
-          <div className="flex flex-wrap gap-3">
-            <form action={closeRequest} className="flex flex-wrap gap-3">
-              <input type="hidden" name="id" value={r.id} />
-              <input type="hidden" name="outcome" value="terpenuhi" />
-              <button name="via" value="thriftbook" className="btn btn-yellow">
-                Sudah dapat (lewat thriftbook)
-              </button>
-              <button name="via" value="lainnya" className={btn}>Sudah dapat (jalur lain)</button>
-            </form>
-            {daysLeft <= 7 && (
-              <form action={extendRequest}>
+          <section aria-label="Kelola Dicari" className="card p-4">
+            <div className="flex flex-wrap items-start gap-3">
+              <details className="group open:w-full">
+                <summary className="btn btn-yellow list-none [&::-webkit-details-marker]:hidden">
+                  <IconCheck />
+                  Sudah dapat
+                </summary>
+                <form action={closeRequest} className="card mt-3 flex flex-col gap-2 p-3">
+                  <input type="hidden" name="id" value={r.id} />
+                  <input type="hidden" name="outcome" value="terpenuhi" />
+                  <p className="text-sm font-semibold">Dapatnya dari mana?</p>
+                  <button name="via" value="thriftbook" className="btn btn-outline btn-sm w-full">Lewat thriftbook</button>
+                  <button name="via" value="lainnya" className="btn btn-outline btn-sm w-full">Jalur lain</button>
+                </form>
+              </details>
+              {daysLeft <= 7 && (
+                <form action={extendRequest}>
+                  <input type="hidden" name="id" value={r.id} />
+                  <button className="btn btn-outline">
+                    <IconRefresh />
+                    Perpanjang
+                  </button>
+                </form>
+              )}
+              <form action={closeRequest} className="ml-auto">
                 <input type="hidden" name="id" value={r.id} />
-                <button className={btn}>Perpanjang 30 hari</button>
+                <input type="hidden" name="outcome" value="ditutup" />
+                <ConfirmButton message="Tutup Dicari ini?" className="btn btn-icon btn-danger" label="Tutup Dicari">
+                  <IconClose />
+                </ConfirmButton>
               </form>
-            )}
-            <form action={closeRequest}>
-              <input type="hidden" name="id" value={r.id} />
-              <input type="hidden" name="outcome" value="ditutup" />
-              <ConfirmButton message="Tutup Dicari ini?" className="btn btn-danger">
-                Tutup
-              </ConfirmButton>
-            </form>
-          </div>
+            </div>
+          </section>
         ) : userId ? (
           <ContactButton
             listingId={r.id}

@@ -39,10 +39,13 @@ export function BookCard({ b, priority = false }: { b: CardListing; priority?: b
   return (
     <Link href={`/buku/${b.id}`} className="card group flex h-full flex-col overflow-hidden">
       <div className={`relative aspect-3/4 border-b-2 border-ink ${coverBg(b.title)}`}>
-        {/* Judul di belakang foto: tampil sebagai sampul jika foto gagal/terlambat */}
-        <span aria-hidden="true" className="font-display absolute inset-x-3 bottom-3 line-clamp-3 text-sm font-extrabold text-ink">
-          {b.title}
-        </span>
+        {/* Sampul pengganti hanya bila memang tidak ada foto. Jika ditaruh di belakang foto,
+            judulnya tembus pada foto berlatar transparan. */}
+        {!cover && (
+          <span aria-hidden="true" className="font-display absolute inset-x-3 bottom-3 line-clamp-4 text-sm font-extrabold text-ink">
+            {b.title}
+          </span>
+        )}
         {cover && (
           // eslint-disable-next-line @next/next/no-img-element
           <img

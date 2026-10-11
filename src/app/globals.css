@@ -161,6 +161,13 @@ h2,
   .btn-danger:hover {
     box-shadow: 4px 4px 0 var(--danger);
   }
+  /* tombol berbentuk ikon: persegi 44px, label lewat aria-label */
+  .btn-icon {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+    gap: 0;
+  }
   .btn-link {
     display: inline-flex;
     align-items: center;

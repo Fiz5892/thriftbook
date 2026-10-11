@@ -10,6 +10,7 @@ import { ContactButton } from "./contact-button";
 import { ShareButton } from "@/components/share-button";
 import { ClearDraft } from "@/components/clear-draft";
 import { DoneChoice } from "@/components/done-choice";
+import { IconBookmark, IconEdit, IconRefresh, IconTrash, IconUndo } from "@/components/icons";
 import { setListingStatus, deleteListing } from "./actions";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -201,8 +202,9 @@ export default async function BukuPage({
       )}
 
       {!sold && (
-        <div className="mt-6">
-          <ShareButton title={l.title} path={`/buku/${l.id}`} />
+        <div className="mt-4 flex items-center gap-2">
+          <ShareButton title={l.title} path={`/buku/${l.id}`} iconOnly />
+          <span className="text-sm text-muted">Bagikan ke teman satu prodi</span>
         </div>
       )}
 
@@ -214,43 +216,72 @@ export default async function BukuPage({
 }
 
 function OwnerControls({ id, status, expired }: { id: string; status: string; expired: boolean }) {
-  const btn = "btn btn-outline";
+  const STATUS: Record<string, { label: string; dot: string }> = {
+    aktif: { label: "Tersedia", dot: "bg-mint" },
+    dipesan: { label: "Dipesan", dot: "bg-orange" },
+    kedaluwarsa: { label: "Kedaluwarsa", dot: "bg-pink" },
+  };
+  const st = STATUS[status] ?? STATUS.aktif;
+
   return (
-    <div className="flex flex-wrap gap-3">
-      {expired && (
-        <form action={setListingStatus}>
-          <input type="hidden" name="id" value={id} />
-          <input type="hidden" name="status" value="aktif" />
-          <button className="btn btn-yellow">
-            Masih ada? Aktifkan lagi
-          </button>
-        </form>
-      )}
-      {status === "aktif" && (
-        <form action={setListingStatus}>
-          <input type="hidden" name="id" value={id} />
-          <input type="hidden" name="status" value="dipesan" />
-          <button className={btn}>Tandai dipesan</button>
-        </form>
-      )}
-      {status === "dipesan" && (
-        <form action={setListingStatus}>
-          <input type="hidden" name="id" value={id} />
-          <input type="hidden" name="status" value="aktif" />
-          <button className={btn}>Batalkan pesanan</button>
-        </form>
-      )}
-      {!expired && <DoneChoice id={id} action={setListingStatus} />}
-      <Link href={`/buku/${id}/edit`} className={btn}>Edit</Link>
-      <form action={deleteListing}>
-        <input type="hidden" name="id" value={id} />
-        <ConfirmButton
-          message="Hapus listing ini? Tidak bisa dibatalkan."
-          className="btn btn-danger"
-        >
-          Hapus
-        </ConfirmButton>
-      </form>
-    </div>
+    <section aria-label="Kelola buku" className="card p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="flex items-center gap-2 text-sm font-semibold">
+          <span aria-hidden="true" className={`size-3 rounded-full border-2 border-ink ${st.dot}`} />
+          {st.label}
+        </p>
+
+        {/* Aksi sekunder berupa ikon; nama aksi ada di aria-label dan tooltip */}
+        <div className="flex items-center gap-2">
+          <Link href={`/buku/${id}/edit`} className="btn btn-icon btn-outline" aria-label="Edit buku" title="Edit buku">
+            <IconEdit />
+          </Link>
+          <form action={deleteListing}>
+            <input type="hidden" name="id" value={id} />
+            <ConfirmButton
+              message="Hapus listing ini? Tidak bisa dibatalkan."
+              className="btn btn-icon btn-danger"
+              label="Hapus buku"
+            >
+              <IconTrash />
+            </ConfirmButton>
+          </form>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-start gap-3">
+        {expired && (
+          <form action={setListingStatus}>
+            <input type="hidden" name="id" value={id} />
+            <input type="hidden" name="status" value="aktif" />
+            <button className="btn btn-yellow">
+              <IconRefresh />
+              Aktifkan lagi
+            </button>
+          </form>
+        )}
+        {status === "aktif" && (
+          <form action={setListingStatus}>
+            <input type="hidden" name="id" value={id} />
+            <input type="hidden" name="status" value="dipesan" />
+            <button className="btn btn-outline">
+              <IconBookmark />
+              Dipesan
+            </button>
+          </form>
+        )}
+        {status === "dipesan" && (
+          <form action={setListingStatus}>
+            <input type="hidden" name="id" value={id} />
+            <input type="hidden" name="status" value="aktif" />
+            <button className="btn btn-outline">
+              <IconUndo />
+              Batalkan
+            </button>
+          </form>
+        )}
+        {!expired && <DoneChoice id={id} action={setListingStatus} />}
+      </div>
+    </section>
   );
 }

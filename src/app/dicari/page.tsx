@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { escapeLike } from "@/lib/schemas";
 import { rupiah, timeAgo } from "@/lib/format";
+import { Mascot } from "@/components/mascot";
 
 const PAGE = 20;
 const ACCEPT_LABEL = { jual: "Beli", hibah: "Hibah", tukar: "Tukar" } as const;
@@ -48,8 +49,8 @@ export default async function DicariPage({
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-navy-900">Dicari</h1>
-        <Link href="/dicari/baru" className="min-h-11 rounded-full bg-yellow-400 px-5 py-2.5 font-semibold text-navy-900">
+        <h1 className="text-2xl text-ink font-extrabold">Dicari</h1>
+        <Link href="/dicari/baru" className="btn btn-yellow">
           Pasang Dicari
         </Link>
       </div>
@@ -58,32 +59,33 @@ export default async function DicariPage({
       <form action="/dicari" className="mt-4 flex gap-2">
         {prodi && <input type="hidden" name="prodi" value={prodi.slug} />}
         <input name="q" defaultValue={q} aria-label="Cari permintaan" placeholder="Cari judul atau mata kuliah"
-          className="min-h-11 flex-1 rounded-full border border-line px-4" />
-        <button className="min-h-11 rounded-full bg-navy-900 px-5 font-semibold text-white">Cari</button>
+          className="input input-pill flex-1" />
+        <button className="btn btn-ink">Cari</button>
       </form>
 
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
         <Link href={href({ prodi: undefined, cursor: undefined })}
-          className={`inline-flex min-h-9 shrink-0 items-center rounded-full border px-3 text-sm font-semibold ${!prodi ? "border-navy-900 bg-navy-900 text-white" : "border-line text-navy-900"}`}>
+          aria-current={!prodi ? "true" : undefined} className="chip">
           Semua
         </Link>
         {programs?.map((p) => (
           <Link key={p.id} href={href({ prodi: p.slug, cursor: undefined })}
-            className={`inline-flex min-h-9 shrink-0 items-center rounded-full border px-3 text-sm font-semibold ${prodi?.id === p.id ? "border-navy-900 bg-navy-900 text-white" : "border-line text-navy-900"}`}>
+            aria-current={prodi?.id === p.id ? "true" : undefined} className="chip">
             {p.short_name}
           </Link>
         ))}
       </div>
 
       {error && (
-        <p role="alert" className="mt-6 rounded-xl border border-danger px-4 py-3 text-danger">
+        <p role="alert" className="alert-danger mt-6">
           Ada yang error di sisi kami, bukan salahmu. Coba lagi sebentar.
         </p>
       )}
 
       {!error && items.length === 0 && (
-        <section className="mt-8 rounded-2xl border border-line p-6">
-          <h2 className="font-semibold">Belum ada yang lagi nyari buku.</h2>
+        <section className="card card-lg mt-8 p-6">
+          <Mascot mood="search" className="mb-3 w-24" />
+          <h2 className="text-xl font-extrabold">Belum ada yang lagi nyari buku.</h2>
           <p className="mt-1 text-muted">Butuh buku tertentu? Pasang Dicari, biar yang punya bisa nemu kamu.</p>
         </section>
       )}
@@ -95,7 +97,7 @@ export default async function DicariPage({
             .filter(Boolean).join(" · ");
           return (
             <li key={r.id}>
-              <Link href={`/dicari/${r.id}`} className="block rounded-xl border border-line p-4">
+              <Link href={`/dicari/${r.id}`} className="card block p-4">
                 <h2 className="font-semibold text-ink">{r.title}</h2>
                 <p className="text-sm text-muted">{meta}</p>
                 <p className="mt-1 text-sm">
@@ -112,7 +114,7 @@ export default async function DicariPage({
       {hasMore && (
         <div className="mt-6 text-center">
           <Link href={href({ cursor: items[items.length - 1].created_at })}
-            className="inline-block min-h-11 rounded-full border border-navy-900 px-6 py-3 font-semibold text-navy-900">
+            className="btn btn-outline">
             Muat lagi
           </Link>
         </div>

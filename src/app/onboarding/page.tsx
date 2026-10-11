@@ -21,7 +21,7 @@ export default async function OnboardingPage({
 
   return (
     <main className="mx-auto w-full max-w-md flex-1 px-4 py-8">
-      <h1 className="text-2xl font-bold text-navy-900">Satu langkah lagi</h1>
+      <h1 className="text-2xl text-ink font-extrabold">Satu langkah lagi</h1>
       <p className="mt-2 text-muted">
         Cukup sekali. Nama dan prodi tampil di listing; nomor WA hanya dikirim ke mahasiswa UM yang
         login dan mengetuk tombol chat, maksimal 30 orang per hari per akun. Pakai nomor yang memang

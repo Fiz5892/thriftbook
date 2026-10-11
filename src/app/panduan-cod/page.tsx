@@ -26,7 +26,7 @@ const POLA: { judul: string; isi: string }[] = [
 export default function PanduanCod() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
-      <h1 className="text-2xl font-bold text-navy-900">Panduan COD aman</h1>
+      <h1 className="text-2xl text-ink font-extrabold">Panduan COD aman</h1>
       <p className="mt-2">
         Transaksi di thriftbook terjadi langsung antar mahasiswa, di luar aplikasi. Kami tidak
         memegang uang dan tidak menjamin barang. Tiga aturan dasarnya:
@@ -40,14 +40,14 @@ export default function PanduanCod() {
       <h2 className="mt-8 text-lg font-semibold">Pola yang sering terjadi</h2>
       <ul className="mt-3 flex flex-col gap-3">
         {POLA.map((p) => (
-          <li key={p.judul} className="rounded-xl border border-line p-4">
+          <li key={p.judul} className="card p-4">
             <p className="font-semibold">{p.judul}</p>
             <p className="mt-1 text-sm">{p.isi}</p>
           </li>
         ))}
       </ul>
 
-      <p role="note" className="mt-8 rounded-xl bg-yellow-400 px-4 py-3 text-sm font-semibold text-navy-900">
+      <p role="note" className="notice mt-8 text-sm">
         Rekomendasi titik temu di kampus akan ditambahkan setelah tim melakukan survei lokasi.
       </p>
     </main>

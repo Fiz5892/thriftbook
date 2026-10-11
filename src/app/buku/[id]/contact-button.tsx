@@ -46,7 +46,7 @@ export function ContactButton({
       <button
         onClick={open}
         disabled={busy}
-        className="min-h-12 w-full rounded-full bg-wa px-6 py-3 font-semibold text-white disabled:opacity-60"
+        className="btn btn-wa w-full disabled:opacity-60"
       >
         {busy ? "Membuka WhatsApp…" : label}
       </button>

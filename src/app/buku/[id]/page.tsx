@@ -7,6 +7,9 @@ import { photoUrl, rupiah, timeAgo } from "@/lib/format";
 import { ConfirmButton } from "@/components/confirm-button";
 import { ReportBox } from "@/components/report-box";
 import { ContactButton } from "./contact-button";
+import { ShareButton } from "@/components/share-button";
+import { ClearDraft } from "@/components/clear-draft";
+import { DoneChoice } from "@/components/done-choice";
 import { setListingStatus, deleteListing } from "./actions";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -96,9 +99,10 @@ export default async function BukuPage({
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-4 pb-8">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:py-10">
+      {baru && isOwner && <ClearDraft />}
       {baru && isOwner && (
-        <div role="status" className="mb-4 rounded-xl bg-yellow-400 px-4 py-3 text-navy-900">
+        <div role="status" className="notice mb-4">
           <p className="font-semibold">Bukumu sudah tayang. Jangan lupa tandai &lsquo;Selesai&rsquo; kalau sudah laku.</p>
           {seekers.length > 0 && (
             <div className="mt-2 text-sm">
@@ -113,16 +117,18 @@ export default async function BukuPage({
         </div>
       )}
       {lapor && LAPOR_MSG[lapor] && (
-        <p role="status" className="mb-4 rounded-xl border border-line px-4 py-3">{LAPOR_MSG[lapor]}</p>
+        <p role="status" className="card mb-4 px-4 py-3">{LAPOR_MSG[lapor]}</p>
       )}
       {isOwner && l.hidden_at && (
-        <p role="status" className="mb-4 rounded-xl border border-danger px-4 py-3 text-danger">
+        <p role="status" className="alert-danger mb-4">
           Listing ini disembunyikan moderator
           {l.hidden_reason === "auto_3_reports" ? " sementara menunggu tinjauan." : "."}
         </p>
       )}
 
-      <div className="flex snap-x gap-3 overflow-x-auto">
+      <div className="lg:grid lg:grid-cols-[1.1fr_1fr] lg:items-start lg:gap-10">
+      <div className="lg:sticky lg:top-24">
+      <div className="flex snap-x gap-3 overflow-x-auto p-1 pb-3">
         {photos.map((p, i) => (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -130,22 +136,26 @@ export default async function BukuPage({
             src={photoUrl(p.path_full)}
             alt={`${l.title}, foto ke-${i + 1}`}
             width={p.width} height={p.height}
-            className="h-80 w-auto max-w-full shrink-0 snap-center rounded-xl border border-line object-contain"
+            fetchPriority={i === 0 ? "high" : "auto"}
+            className="card h-80 w-auto max-w-[85%] shrink-0 snap-center bg-paper object-contain lg:h-[30rem]"
           />
         ))}
       </div>
+      </div>
 
-      <h1 className="mt-4 text-2xl font-bold text-navy-900">{l.title}</h1>
+      <div className="mt-4 lg:mt-0">
+
+      <h1 className="text-2xl font-extrabold text-ink md:text-3xl">{l.title}</h1>
       {l.author && <p className="text-muted">{l.author}</p>}
 
-      <p className="mt-2 text-xl font-bold text-navy-900">
+      <p className="font-display mt-3 text-2xl font-extrabold text-ink">
         {l.offer_type === "jual" && l.price !== null ? rupiah(l.price) : l.offer_type === "hibah" ? "Gratis" : "Tukar"}
       </p>
       {l.offer_type === "tukar" && l.swap_wish && (
         <p className="mt-1">Ingin ditukar dengan: <strong>{l.swap_wish}</strong></p>
       )}
 
-      <p className="mt-3 inline-block rounded-full bg-yellow-400 px-3 py-1 text-sm font-semibold text-navy-900">
+      <p className="badge mt-3 inline-block text-sm">
         {CONDITION_LABEL[cond]}
       </p>
       <p className="mt-1 text-sm text-muted">{CONDITION_HELP[cond]}</p>
@@ -161,17 +171,17 @@ export default async function BukuPage({
 
       <div className="mt-6">
         {sold ? (
-          <p className="rounded-xl border border-line px-4 py-3 text-muted">Buku ini sudah tidak tersedia.</p>
+          <p className="card px-4 py-3 text-muted">Buku ini sudah tidak tersedia.</p>
         ) : isOwner ? (
           <OwnerControls id={l.id} status={l.status} expired={expired} />
         ) : reserved ? (
-          <p className="rounded-xl border border-line px-4 py-3 text-muted">Sedang dipesan orang lain.</p>
+          <p className="card px-4 py-3 text-muted">Sedang dipesan orang lain.</p>
         ) : userId ? (
           <ContactButton listingId={l.id} />
         ) : (
           <Link
             href={`/masuk?next=${encodeURIComponent(`/buku/${l.id}`)}`}
-            className="flex min-h-12 w-full items-center justify-center rounded-full bg-wa px-6 py-3 font-semibold text-white"
+            className="btn btn-wa w-full"
           >
             Masuk untuk chat penjual
           </Link>
@@ -179,31 +189,39 @@ export default async function BukuPage({
       </div>
 
       {!sold && !isOwner && (
-        <aside className="mt-6 rounded-xl border border-line p-4 text-sm">
+        <aside className="card mt-6 p-4 text-sm">
           <h2 className="font-semibold">Tips COD aman</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Ketemu di area ramai kampus pada jam kuliah.</li>
             <li>Cek bukunya dulu, baru bayar.</li>
             <li>Jangan transfer DP ke siapa pun.</li>
           </ul>
-          <Link href="/panduan-cod" className="mt-2 inline-block underline">Baca panduan lengkap</Link>
+          <Link href="/panduan-cod" className="btn-link mt-1">Baca panduan lengkap</Link>
         </aside>
       )}
 
+      {!sold && (
+        <div className="mt-6">
+          <ShareButton title={l.title} path={`/buku/${l.id}`} />
+        </div>
+      )}
+
       {userId && !isOwner && <ReportBox kind="listing" targetId={l.id} />}
+      </div>
+      </div>
     </main>
   );
 }
 
 function OwnerControls({ id, status, expired }: { id: string; status: string; expired: boolean }) {
-  const btn = "min-h-11 rounded-full border border-navy-900 px-5 py-2 font-semibold text-navy-900";
+  const btn = "btn btn-outline";
   return (
     <div className="flex flex-wrap gap-3">
       {expired && (
         <form action={setListingStatus}>
           <input type="hidden" name="id" value={id} />
           <input type="hidden" name="status" value="aktif" />
-          <button className="min-h-11 rounded-full bg-yellow-400 px-5 py-2 font-semibold text-navy-900">
+          <button className="btn btn-yellow">
             Masih ada? Aktifkan lagi
           </button>
         </form>
@@ -222,21 +240,13 @@ function OwnerControls({ id, status, expired }: { id: string; status: string; ex
           <button className={btn}>Batalkan pesanan</button>
         </form>
       )}
-      {!expired && (
-        <form action={setListingStatus}>
-          <input type="hidden" name="id" value={id} />
-          <input type="hidden" name="status" value="selesai" />
-          <button className="min-h-11 rounded-full bg-yellow-400 px-5 py-2 font-semibold text-navy-900">
-            Tandai selesai
-          </button>
-        </form>
-      )}
-      <Link href={`/buku/${id}/edit`} className={`${btn} inline-flex items-center`}>Edit</Link>
+      {!expired && <DoneChoice id={id} action={setListingStatus} />}
+      <Link href={`/buku/${id}/edit`} className={btn}>Edit</Link>
       <form action={deleteListing}>
         <input type="hidden" name="id" value={id} />
         <ConfirmButton
           message="Hapus listing ini? Tidak bisa dibatalkan."
-          className="min-h-11 rounded-full border border-danger px-5 py-2 font-semibold text-danger"
+          className="btn btn-danger"
         >
           Hapus
         </ConfirmButton>

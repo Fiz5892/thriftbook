@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef } from "react";
 import { createRequest, type RequestFormState } from "../actions";
 import { OFFER_TYPES } from "@/lib/schemas";
 
-const input = "min-h-11 w-full rounded-xl border border-line px-4 py-2";
+const input = "input";
 const ACCEPT_LABEL = { jual: "Beli", hibah: "Hibah (gratis)", tukar: "Tukar" } as const;
 const FIELD_LABEL: Record<string, string> = {
   title: "Judul atau topik", course: "Mata kuliah", accepts: "Cara yang diterima",
@@ -68,7 +68,7 @@ export function RequestForm({
         <div className="mt-2 flex flex-wrap gap-4">
           {OFFER_TYPES.map((t) => (
             <label key={t} className="flex items-center gap-2">
-              <input type="checkbox" name="accepts" value={t} defaultChecked={accepted.includes(t)} className="size-5" />
+              <input type="checkbox" name="accepts" value={t} defaultChecked={accepted.includes(t)} className="check" />
               {ACCEPT_LABEL[t]}
             </label>
           ))}
@@ -90,7 +90,7 @@ export function RequestForm({
 
       <div ref={summary} tabIndex={-1} aria-live="assertive">
         {(state.error || Object.keys(fe).length > 0) && (
-          <div role="alert" className="rounded-xl border border-danger px-4 py-3 text-danger">
+          <div role="alert" className="alert-danger">
             <p className="font-semibold">Dicari-mu belum terpasang.</p>
             {state.error && <p>{state.error}</p>}
             {Object.keys(fe).length > 0 && (
@@ -104,7 +104,7 @@ export function RequestForm({
       </div>
 
       <button disabled={pending}
-        className="min-h-11 rounded-full bg-yellow-400 px-6 py-3 font-semibold text-navy-900 disabled:opacity-60">
+        className="btn btn-yellow disabled:opacity-60">
         {pending ? "Memasang…" : "Pasang Dicari"}
       </button>
     </form>

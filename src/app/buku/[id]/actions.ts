@@ -19,8 +19,11 @@ export async function setListingStatus(formData: FormData) {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/masuk");
 
-  const patch: { status: string; bumped_at?: string } = { status: status.data };
+  // AC-07.2: jawaban "laku lewat thriftbook?" disimpan untuk metrik M-04
+  const via = z.enum(["thriftbook", "lainnya", "tidak_dijawab"]).safeParse(formData.get("via"));
+  const patch: { status: string; bumped_at?: string; done_via?: string } = { status: status.data };
   if (status.data === "aktif") patch.bumped_at = new Date().toISOString();
+  if (status.data === "selesai") patch.done_via = via.success ? via.data : "tidak_dijawab";
   const { data } = await supabase
     .from("listings").update(patch).eq("id", id.data).select("id");
 

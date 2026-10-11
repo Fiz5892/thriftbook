@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { updateProfile, type ProfileState } from "./actions";
 
-const input = "min-h-11 w-full rounded-xl border border-line px-4 py-2";
+const input = "input";
 
 export function ProfileForm({
   programs,
@@ -46,7 +46,7 @@ export function ProfileForm({
         {fe.whatsapp && <span role="alert" className="text-sm text-danger">{fe.whatsapp}</span>}
       </label>
       <label className="flex items-start gap-3">
-        <input type="checkbox" name="hidden" defaultChecked={initial.hidden} className="mt-1 size-5" />
+        <input type="checkbox" name="hidden" defaultChecked={initial.hidden} className="mt-1 check" />
         <span>
           Sembunyikan nomorku sementara
           <span className="block text-sm text-muted">
@@ -55,11 +55,11 @@ export function ProfileForm({
         </span>
       </label>
 
-      {state.error && <p role="alert" className="rounded-xl border border-danger px-4 py-3 text-danger">{state.error}</p>}
-      {state.ok && <p role="status" className="rounded-xl bg-yellow-400 px-4 py-3 font-semibold text-navy-900">{state.ok}</p>}
+      {state.error && <p role="alert" className="alert-danger">{state.error}</p>}
+      {state.ok && <p role="status" className="notice">{state.ok}</p>}
 
       <button disabled={pending}
-        className="min-h-11 rounded-full bg-navy-900 px-6 py-3 font-semibold text-white disabled:opacity-60">
+        className="btn btn-ink disabled:opacity-60">
         {pending ? "Menyimpan…" : "Simpan"}
       </button>
     </form>

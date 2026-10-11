@@ -3,11 +3,11 @@ export const metadata = { title: "Syarat Penggunaan — thriftbook." };
 export default function Syarat() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
-      <p role="note" className="rounded-xl bg-yellow-400 px-4 py-3 text-sm font-semibold text-navy-900">
+      <p role="note" className="notice text-sm">
         DRAF untuk uji coba. Belum ditinjau pihak hukum atau dosen pengampu (PRD Q-08). Jangan
         diluncurkan ke publik sebelum ditinjau.
       </p>
-      <h1 className="mt-6 text-2xl font-bold text-navy-900">Syarat Penggunaan</h1>
+      <h1 className="mt-6 text-2xl text-ink font-extrabold">Syarat Penggunaan</h1>
       <div className="mt-4 space-y-4">
         <section>
           <h2 className="font-semibold">Siapa yang boleh memakai</h2>

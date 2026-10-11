@@ -11,7 +11,7 @@ export default async function ProfilPage() {
 
   return (
     <main className="mx-auto w-full max-w-md flex-1 px-4 py-6">
-      <h1 className="text-2xl font-bold text-navy-900">Edit profil</h1>
+      <h1 className="text-2xl text-ink font-extrabold">Edit profil</h1>
       <ProfileForm
         programs={programs ?? []}
         initial={{

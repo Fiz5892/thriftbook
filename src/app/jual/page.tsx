@@ -8,7 +8,7 @@ export default async function JualPage() {
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-6">
-      <h1 className="text-2xl font-bold text-navy-900">Jual bukumu</h1>
+      <h1 className="text-2xl text-ink font-extrabold">Jual bukumu</h1>
       <p className="mt-1 text-muted">Foto buku kamu sendiri, ya. Foto dari internet bisa dilaporkan.</p>
       <ListingForm programs={programs ?? []} defaultProgramId={profile.study_program_id ?? undefined} />
     </main>

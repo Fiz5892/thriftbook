@@ -54,18 +54,18 @@ export default async function DicariDetail({
   const meta = [r.course_name_snapshot, prodi, r.semester ? `Semester ${r.semester}` : null]
     .filter(Boolean).join(" · ");
   const daysLeft = Math.ceil((new Date(r.expires_at).getTime() - nowMs()) / 86400_000);
-  const btn = "min-h-11 rounded-full border border-navy-900 px-5 py-2 font-semibold text-navy-900";
+  const btn = "btn btn-outline";
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-4">
       {baru && isOwner && (
-        <p role="status" className="mb-4 rounded-xl bg-yellow-400 px-4 py-3 font-semibold text-navy-900">
+        <p role="status" className="notice mb-4">
           Dicari-mu sudah terpasang. Berlaku 30 hari.
         </p>
       )}
 
       <p className="text-sm font-semibold text-muted">Dicari</p>
-      <h1 className="text-2xl font-bold text-navy-900">{r.title}</h1>
+      <h1 className="text-2xl text-ink font-extrabold">{r.title}</h1>
       <p className="mt-1 text-muted">{meta}</p>
       <p className="mt-3">
         Diterima: {(r.accepts as (keyof typeof ACCEPT_LABEL)[]).map((a) => ACCEPT_LABEL[a]).join(" · ")}
@@ -81,7 +81,7 @@ export default async function DicariDetail({
 
       <div className="mt-6">
         {!open ? (
-          <p className="rounded-xl border border-line px-4 py-3 text-muted">
+          <p className="card px-4 py-3 text-muted">
             {STATUS_LABEL[r.status] ?? "Sudah tidak aktif"}.
           </p>
         ) : isOwner ? (
@@ -89,7 +89,7 @@ export default async function DicariDetail({
             <form action={closeRequest} className="flex flex-wrap gap-3">
               <input type="hidden" name="id" value={r.id} />
               <input type="hidden" name="outcome" value="terpenuhi" />
-              <button name="via" value="thriftbook" className="min-h-11 rounded-full bg-yellow-400 px-5 py-2 font-semibold text-navy-900">
+              <button name="via" value="thriftbook" className="btn btn-yellow">
                 Sudah dapat (lewat thriftbook)
               </button>
               <button name="via" value="lainnya" className={btn}>Sudah dapat (jalur lain)</button>
@@ -103,7 +103,7 @@ export default async function DicariDetail({
             <form action={closeRequest}>
               <input type="hidden" name="id" value={r.id} />
               <input type="hidden" name="outcome" value="ditutup" />
-              <ConfirmButton message="Tutup Dicari ini?" className="min-h-11 rounded-full border border-danger px-5 py-2 font-semibold text-danger">
+              <ConfirmButton message="Tutup Dicari ini?" className="btn btn-danger">
                 Tutup
               </ConfirmButton>
             </form>
@@ -117,7 +117,7 @@ export default async function DicariDetail({
           />
         ) : (
           <Link href={`/masuk?next=${encodeURIComponent(`/dicari/${r.id}`)}`}
-            className="flex min-h-12 w-full items-center justify-center rounded-full bg-wa px-6 py-3 font-semibold text-white">
+            className="btn btn-wa w-full">
             Masuk untuk menghubungi
           </Link>
         )}

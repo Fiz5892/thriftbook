@@ -18,7 +18,7 @@ export function LoginButton({ next }: { next?: string }) {
   return (
     <button
       onClick={login}
-      className="min-h-11 rounded-full bg-navy-900 px-6 py-3 font-semibold text-white"
+      className="btn btn-ink"
     >
       Masuk dengan Google
     </button>

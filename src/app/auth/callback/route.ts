@@ -15,11 +15,18 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const next = safeNext(searchParams.get("next"));
 
+  const providerError = `${searchParams.get("error_description") ?? ""} ${searchParams.get("error") ?? ""}`;
+  if (/banned/i.test(providerError)) return NextResponse.redirect(`${origin}/diblokir`);
+
   if (!code) return NextResponse.redirect(`${origin}/masuk?error=kode`);
 
   const supabase = await createClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) return NextResponse.redirect(`${origin}/masuk?error=gagal`);
+  if (error) {
+    // Akun diblokir di level Auth: tampilkan penjelasan, bukan "login gagal" (AC-16.3)
+    if (/banned/i.test(error.message)) return NextResponse.redirect(`${origin}/diblokir`);
+    return NextResponse.redirect(`${origin}/masuk?error=gagal`);
+  }
 
   const { data } = await supabase.auth.getUser();
   const user = data.user;

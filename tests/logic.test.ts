@@ -80,3 +80,36 @@ test("FR-02: onboarding mengubah format nomor WA dan butuh persetujuan", () => {
   assert.equal(onboardingSchema.safeParse({ ...ok, consent: undefined }).success, false);
   assert.equal(onboardingSchema.safeParse({ ...ok, whatsapp: "123" }).success, false);
 });
+
+// Regresi: form hanya merender kolom harga saat tipe "jual", jadi untuk hibah/tukar
+// kunci `price` tidak ada sama sekali di FormData (bukan string kosong).
+test("hibah tanpa kolom harga sama sekali lolos validasi", () => {
+  const { price, ...tanpaHarga } = baseListing;
+  void price;
+  const r = listingSchema.safeParse({ ...tanpaHarga, offerType: "hibah" });
+  assert.equal(r.success, true, JSON.stringify(r.success ? "" : r.error.issues));
+  if (r.success) assert.equal(r.data.price, null);
+});
+
+test("tukar tanpa kolom harga sama sekali lolos validasi", () => {
+  const { price, ...tanpaHarga } = baseListing;
+  void price;
+  const r = listingSchema.safeParse({ ...tanpaHarga, offerType: "tukar", swapWish: "Kalkulus 1" });
+  assert.equal(r.success, true, JSON.stringify(r.success ? "" : r.error.issues));
+  if (r.success) assert.equal(r.data.price, null);
+});
+
+test("jual tanpa kolom harga tetap ditolak dengan pesan yang jelas", () => {
+  const { price, ...tanpaHarga } = baseListing;
+  void price;
+  const r = listingSchema.safeParse({ ...tanpaHarga, offerType: "jual" });
+  assert.equal(r.success, false);
+  if (!r.success) assert.ok(r.error.issues.some((i) => i.path[0] === "price" && /harga/i.test(i.message)));
+});
+
+test("hibah dengan harga terkirim: harga dibuang, bukan ditolak", () => {
+  // Pengguna sempat mengetik harga lalu pindah ke Hibah; kolom sudah tidak dirender,
+  // tapi nilai lama bisa ikut terkirim. Server harus tetap menyimpan price = null.
+  const r = listingSchema.safeParse({ ...baseListing, offerType: "hibah", price: "45000" });
+  assert.equal(r.success, true);
+});

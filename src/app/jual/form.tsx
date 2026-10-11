@@ -7,10 +7,11 @@ import {
   CONDITIONS, CONDITION_LABEL, CONDITION_HELP, OFFER_TYPES, OFFER_LABEL,
 } from "@/lib/schemas";
 import { photoUrl } from "@/lib/format";
+import { DRAFT_KEY, DRAFT_FIELDS, DRAFT_RADIOS } from "@/lib/draft";
 
 type Photo = { id: string; thumb: string };
 const MAX_INPUT = 10 * 1024 * 1024;
-const input = "min-h-11 w-full rounded-xl border border-line px-4 py-2";
+const input = "input";
 
 export function ListingForm({
   programs,
@@ -26,6 +27,7 @@ export function ListingForm({
   const [uploading, setUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const fe = state.fieldErrors ?? {};
   const v = state.values ?? {};
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -37,6 +39,51 @@ export function ListingForm({
     setSeen(state);
     if (state.values?.condition) setCondition(state.values.condition);
     if (state.values?.offerType) setOffer(state.values.offerType);
+  }
+
+  // AC-04.9: pulihkan draf teks jika koneksi/halaman terputus. DOM ditulis langsung (bukan
+  // setState di effect); radio dipulihkan dengan meng-klik agar state React ikut berubah.
+  useEffect(() => {
+    if (state.values) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      const form = formRef.current;
+      if (!raw || !form) return;
+      const d = JSON.parse(raw) as Record<string, string>;
+      for (const k of DRAFT_FIELDS) {
+        const el = form.elements.namedItem(k) as HTMLInputElement | HTMLSelectElement | null;
+        if (el && d[k] !== undefined && "value" in el && !el.value) el.value = d[k];
+      }
+      for (const k of DRAFT_RADIOS) {
+        if (!d[k]) continue;
+        form.querySelector<HTMLInputElement>(`input[name="${k}"][value="${CSS.escape(d[k])}"]`)?.click();
+      }
+    } catch {
+      // draf rusak atau localStorage diblokir: abaikan
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function saveDraft() {
+    try {
+      const form = formRef.current;
+      if (!form) return;
+      const fd = new FormData(form);
+      const d: Record<string, string> = {};
+      for (const k of [...DRAFT_FIELDS, ...DRAFT_RADIOS]) {
+        const v = fd.get(k);
+        if (typeof v === "string") d[k] = v;
+      }
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+    } catch {
+      // abaikan
+    }
+  }
+
+  function makeCover(id: string) {
+    setPhotos((p) => {
+      const picked = p.find((x) => x.id === id);
+      return picked ? [picked, ...p.filter((x) => x.id !== id)] : p;
+    });
   }
 
   // Bawa pengguna ke ringkasan error: tanpa ini pesan di tengah form tak terlihat dari tombol
@@ -91,19 +138,27 @@ export function ListingForm({
   }
 
   return (
-    <form action={action} className="mt-6 flex flex-col gap-5" noValidate>
+    <form ref={formRef} action={action} onChange={saveDraft} className="mt-6 flex flex-col gap-5" noValidate>
       <fieldset>
         <legend className="font-semibold">Foto (1–3)</legend>
         <div className="mt-2 flex flex-wrap gap-3">
           {photos.map((p, i) => (
-            <div key={p.id} className="relative size-24 overflow-hidden rounded-xl border border-line">
+            <div key={p.id} className="card relative size-24 overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={photoUrl(p.thumb)} alt={`Foto ke-${i + 1}`} className="size-full object-cover" />
               <input type="hidden" name="photoIds" value={p.id} />
-              {i === 0 && (
+              {i === 0 ? (
                 <span className="absolute bottom-0 left-0 bg-yellow-400 px-2 text-xs font-semibold text-navy-900">
                   Sampul
                 </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => makeCover(p.id)}
+                  className="absolute bottom-0 left-0 right-0 bg-white/90 px-1 py-1 text-xs font-semibold text-navy-900"
+                >
+                  Jadikan sampul
+                </button>
               )}
               <button
                 type="button"
@@ -120,7 +175,7 @@ export function ListingForm({
               type="button"
               disabled={uploading}
               onClick={() => fileRef.current?.click()}
-              className="flex size-24 items-center justify-center rounded-xl border border-dashed border-navy-600 px-2 text-center text-sm font-semibold text-navy-900 disabled:opacity-60"
+              className="flex size-24 items-center justify-center rounded-[18px] border-2 border-dashed border-ink bg-paper px-2 text-center text-sm font-semibold text-ink hover:bg-yellow-400 disabled:opacity-60"
             >
               {uploading ? "Mengunggah…" : "Tambah foto"}
             </button>
@@ -174,9 +229,9 @@ export function ListingForm({
         <legend className="font-semibold">Kondisi</legend>
         <div className="mt-2 flex flex-col gap-2">
           {CONDITIONS.map((c) => (
-            <label key={c} className="flex items-start gap-3 rounded-xl border border-line p-3">
+            <label key={c} className="option has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-navy-600">
               <input type="radio" name="condition" value={c} checked={condition === c}
-                onChange={() => setCondition(c)} className="mt-1 size-5" />
+                onChange={() => setCondition(c)} className="check mt-0.5" />
               <span>
                 <span className="font-semibold">{CONDITION_LABEL[c]}</span>
                 <span className="block text-sm text-muted">{CONDITION_HELP[c]}</span>
@@ -191,7 +246,7 @@ export function ListingForm({
         <legend className="font-semibold">Mau diapakan?</legend>
         <div className="mt-2 flex gap-2">
           {OFFER_TYPES.map((t) => (
-            <label key={t} className={`flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-full border px-3 text-center text-sm font-semibold ${offer === t ? "border-navy-900 bg-navy-900 text-white" : "border-line"}`}>
+            <label key={t} className="option min-h-11 flex-1 items-center justify-center text-center text-sm font-semibold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-navy-600">
               <input type="radio" name="offerType" value={t} checked={offer === t}
                 onChange={() => setOffer(t)} className="sr-only" />
               {OFFER_LABEL[t]}
@@ -224,14 +279,14 @@ export function ListingForm({
       </label>
 
       <label className="flex items-start gap-3">
-        <input type="checkbox" name="authenticity" defaultChecked={v.authenticity === "on"} className="mt-1 size-5" />
+        <input type="checkbox" name="authenticity" defaultChecked={v.authenticity === "on"} className="mt-1 check" />
         <span>Ini buku fisik asli, bukan fotokopi, cetak ulang, atau file PDF.</span>
       </label>
       {fe.authenticity && <span role="alert" className="-mt-3 text-sm text-danger">{fe.authenticity}</span>}
 
       <div ref={summaryRef} tabIndex={-1} aria-live="assertive">
         {(state.error || Object.keys(fe).length > 0) && (
-          <div role="alert" className="rounded-xl border border-danger px-4 py-3 text-danger">
+          <div role="alert" className="alert-danger">
             <p className="font-semibold">Bukunya belum terposting.</p>
             {state.error && <p>{state.error}</p>}
             {Object.keys(fe).length > 0 && (
@@ -247,7 +302,7 @@ export function ListingForm({
       </div>
 
       <button disabled={pending || uploading}
-        className="min-h-11 rounded-full bg-yellow-400 px-6 py-3 font-semibold text-navy-900 disabled:opacity-60">
+        className="btn btn-yellow disabled:opacity-60">
         {pending ? "Memposting…" : "Terbitkan"}
       </button>
     </form>

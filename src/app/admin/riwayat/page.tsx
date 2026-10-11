@@ -15,12 +15,12 @@ export default async function RiwayatPage() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
       <Link href="/admin" className="text-sm font-semibold underline">← Panel moderasi</Link>
-      <h1 className="mt-2 text-2xl font-bold text-navy-900">Riwayat tindakan</h1>
+      <h1 className="mt-2 text-2xl text-ink font-extrabold">Riwayat tindakan</h1>
       <p className="text-muted">100 tindakan terakhir. Hanya-baca: tidak ada yang bisa diubah atau dihapus.</p>
       {!data?.length && <p className="mt-4 text-muted">Belum ada tindakan.</p>}
       <ul className="mt-4 flex flex-col gap-2">
         {data?.map((a) => (
-          <li key={a.id} className="rounded-xl border border-line p-3 text-sm">
+          <li key={a.id} className="card p-3 text-sm">
             <p><strong>{a.action}</strong> · <span className="text-muted">{timeAgo(a.created_at)}</span></p>
             <p className="break-all text-muted">target {a.target_id}</p>
             <p>{a.reason}</p>

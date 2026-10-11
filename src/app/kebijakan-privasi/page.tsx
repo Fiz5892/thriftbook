@@ -5,22 +5,23 @@ const ROWS: [string, string, string, string][] = [
   ["Nama tampilan, prodi, angkatan", "Ditampilkan di listing", "Publik", "Selama akun aktif"],
   ["Nomor WhatsApp", "Dihubungi pembeli atau pemilik buku", "Hanya dikirim ke pengguna login yang mengetuk tombol chat, maks 30 per hari", "Selama akun aktif"],
   ["Foto buku", "Ditampilkan di listing", "Publik", "Sampai listing dihapus"],
+  ["Kata kunci pencarian (tanpa identitasmu)", "Mengetahui buku apa yang dicari tetapi belum ada", "Admin", "400 hari"],
   ["Riwayat membuka kontak", "Batas penyalahgunaan dan investigasi penipuan", "Kamu dan admin", "90 hari"],
 ];
 
 export default function Privasi() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
-      <p role="note" className="rounded-xl bg-yellow-400 px-4 py-3 text-sm font-semibold text-navy-900">
+      <p role="note" className="notice text-sm">
         DRAF untuk uji coba. Belum ditinjau pihak hukum atau dosen pengampu (PRD Q-08). Jangan
         diluncurkan ke publik sebelum ditinjau.
       </p>
-      <h1 className="mt-6 text-2xl font-bold text-navy-900">Kebijakan Privasi</h1>
+      <h1 className="mt-6 text-2xl text-ink font-extrabold">Kebijakan Privasi</h1>
       <p className="mt-3">
         Berikut data yang kami simpan dan alasannya. Kami tidak menyimpan NIM, foto profil, lokasi,
         atau memakai pelacak pihak ketiga.
       </p>
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-4 overflow-x-auto" tabIndex={0} role="region" aria-label="Tabel data yang kami simpan">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-line">

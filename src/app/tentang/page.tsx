@@ -7,7 +7,7 @@ const CONTACT = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
 export default function Tentang() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
-      <h1 className="text-2xl font-bold text-navy-900">Tentang thriftbook.</h1>
+      <h1 className="text-2xl text-ink font-extrabold">Tentang thriftbook.</h1>
       <p className="mt-3">
         Thriftbook adalah papan katalog buku kuliah bekas untuk sivitas Universitas Negeri Malang.
         Pemilik buku memajang bukunya untuk dijual, dihibahkan, atau ditukar. Pencari bisa menyaring

@@ -9,7 +9,7 @@ export default async function HapusAkunPage() {
 
   return (
     <main className="mx-auto w-full max-w-md flex-1 px-4 py-6">
-      <h1 className="text-2xl font-bold text-navy-900">Hapus akun</h1>
+      <h1 className="text-2xl text-ink font-extrabold">Hapus akun</h1>
       <p className="mt-3">Ini akan menghapus permanen:</p>
       <ul className="mt-2 list-disc pl-5">
         <li>profil dan nomor WhatsAppmu,</li>

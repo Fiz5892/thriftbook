@@ -34,6 +34,17 @@ const optionalText = (max: number) =>
     .optional()
     .transform((v) => v ?? null);
 
+/**
+ * Angka opsional dari form. Mengembalikan null untuk "" DAN untuk kunci yang tidak dikirim.
+ * Penting: kolom yang tidak dirender (mis. harga saat hibah/tukar) tidak ada di FormData sama sekali,
+ * dan z.coerce.number() mengubah undefined menjadi NaN sehingga ditolak.
+ */
+const optionalInt = (inner: z.ZodType<number>, message: string) =>
+  z
+    .union([z.literal(""), inner], { error: message })
+    .optional()
+    .transform((v) => (v === "" || v === undefined ? null : v));
+
 export const onboardingSchema = z.object({
   displayName: z.string().trim().min(2, "Nama minimal 2 karakter").max(40, "Nama maksimal 40 karakter"),
   studyProgramId: z.coerce.number().int().positive("Pilih prodi"),
@@ -63,12 +74,10 @@ export const listingSchema = z
     author: optionalText(80),
     course: z.string().trim().min(2, "Isi mata kuliah").max(80),
     studyProgramId: z.coerce.number().int().positive("Pilih prodi"),
-    semester: z
-      .union([z.literal(""), z.coerce.number().int().min(1).max(8)])
-      .transform((v) => (v === "" ? null : v)),
+    semester: optionalInt(z.coerce.number().int().min(1).max(8), "Semester harus 1–8"),
     condition: z.enum(CONDITIONS, { error: "Pilih kondisi buku" }),
     offerType: z.enum(OFFER_TYPES, { error: "Pilih jual, hibah, atau tukar" }),
-    price: z.union([z.literal(""), z.coerce.number().int()]).transform((v) => (v === "" ? null : v)),
+    price: optionalInt(z.coerce.number().int(), "Harga harus berupa angka bulat, mis. 45000"),
     swapWish: optionalText(200),
     notes: optionalText(500),
     authenticity: z.literal("on", { error: "Centang pernyataan keaslian buku." }),
@@ -118,15 +127,12 @@ export const REPORT_LABEL: Record<(typeof REPORT_REASONS)[number], string> = {
 export const requestSchema = z.object({
   title: z.string().trim().min(3, "Judul atau topik minimal 3 karakter").max(120),
   course: z.string().trim().min(2, "Isi mata kuliah").max(80),
-  studyProgramId: z
-    .union([z.literal(""), z.coerce.number().int().positive()])
-    .transform((v) => (v === "" ? null : v)),
-  semester: z
-    .union([z.literal(""), z.coerce.number().int().min(1).max(8)])
-    .transform((v) => (v === "" ? null : v)),
+  studyProgramId: optionalInt(z.coerce.number().int().positive(), "Prodi tidak valid"),
+  semester: optionalInt(z.coerce.number().int().min(1).max(8), "Semester harus 1–8"),
   accepts: z.array(z.enum(OFFER_TYPES)).min(1, "Pilih minimal satu cara"),
-  maxBudget: z
-    .union([z.literal(""), z.coerce.number().int().min(1000, "Minimal Rp1.000").max(1_000_000, "Maksimal Rp1.000.000")])
-    .transform((v) => (v === "" ? null : v)),
+  maxBudget: optionalInt(
+    z.coerce.number().int().min(1000, "Minimal Rp1.000").max(1_000_000, "Maksimal Rp1.000.000"),
+    "Anggaran harus berupa angka bulat",
+  ),
   notes: optionalText(300),
 });

@@ -1,38 +1,347 @@
 @import "tailwindcss";
 
+/*
+ * Sistem desain thriftbook.
+ * Neo-brutalist yang ceria: kertas krem, garis tinta tebal, bayangan keras, aksen pastel.
+ * Identitas tetap: biru tua (navy) untuk aksi utama, kuning untuk sorotan, Poppins untuk teks.
+ * Semua teks di atas warna pastel memakai --ink (kontras ≥ 7:1).
+ */
 :root {
+  --cream: #fbf4e4;
+  --paper: #fffdf7;
+  --ink: #15122b;
   --navy-900: #1a0b7a;
   --navy-600: #3b2bd0;
   --yellow-400: #fdd94e;
-  --wa-green: #1f9d55;
-  --ink: #1b1b2f;
-  --muted: #5d5d75;
-  --line: #e3e3ef;
-  --surface: #f6f6fc;
+  --mint: #6ee7a8;
+  --pink: #f9a8d4;
+  --lilac: #b9adff;
+  --orange: #fdba5a;
+  --wa-green: #15803d; /* putih di atasnya 5,0:1 (WCAG AA) */
+  --muted: #4f4b66; /* di atas krem ±7:1 */
+  --line: #d8ccb2;
+  --surface: #f3ead4;
   --danger: #b3261e;
-  --background: #ffffff;
+  --danger-bg: #fff0ee;
+  --shadow: 4px 4px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
 }
 
 @theme inline {
+  --color-cream: var(--cream);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
   --color-navy-900: var(--navy-900);
   --color-navy-600: var(--navy-600);
   --color-yellow-400: var(--yellow-400);
+  --color-mint: var(--mint);
+  --color-pink: var(--pink);
+  --color-lilac: var(--lilac);
+  --color-orange: var(--orange);
   --color-wa: var(--wa-green);
-  --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-surface: var(--surface);
   --color-danger: var(--danger);
   --font-sans: var(--font-poppins);
+  --font-display: var(--font-display);
+}
+
+html {
+  background: var(--cream);
+  /* Header sticky (64px) dan bottom nav mobile (±72px) tidak boleh menutupi elemen yang difokus
+     atau dituju anchor (WCAG 2.4.11 Focus Not Obscured). */
+  scroll-padding-top: 80px;
+  scroll-padding-bottom: 96px;
+}
+@media (min-width: 768px) {
+  html {
+    scroll-padding-bottom: 16px;
+  }
 }
 
 body {
-  background: var(--background);
+  background: var(--cream);
   color: var(--ink);
   font-family: var(--font-poppins), system-ui, sans-serif;
 }
 
+h1,
+h2,
+.font-display {
+  font-family: var(--font-display), var(--font-poppins), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
 :focus-visible {
-  outline: 2px solid var(--navy-600);
+  outline: 3px solid var(--navy-600);
   outline-offset: 2px;
+}
+
+@layer components {
+  /* ---------- kartu */
+  .card {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-lg {
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+  }
+  a.card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  a.card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  /* ---------- tombol */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.55rem 1.25rem;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+    cursor: pointer;
+  }
+  .btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--ink);
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-sm {
+    min-height: 40px;
+    padding: 0.35rem 1rem;
+    font-size: 0.875rem;
+  }
+  .btn-yellow {
+    background: var(--yellow-400);
+    color: var(--ink);
+  }
+  .btn-ink {
+    background: var(--navy-900);
+    color: #fff;
+  }
+  .btn-outline {
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .btn-wa {
+    background: var(--wa-green);
+    color: #fff;
+  }
+  .btn-danger {
+    background: var(--paper);
+    color: var(--danger);
+    border-color: var(--danger);
+    box-shadow: 3px 3px 0 var(--danger);
+  }
+  .btn-danger:hover {
+    box-shadow: 4px 4px 0 var(--danger);
+  }
+  .btn-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding-block: 0.25rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+
+  /* ---------- chip filter */
+  .chip {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 0.9rem;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background-color 0.12s ease, color 0.12s ease;
+  }
+  .chip:hover {
+    background: var(--yellow-400);
+  }
+  .chip[aria-current="true"],
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    color: #fff;
+  }
+
+  /* ---------- input */
+  .input {
+    width: 100%;
+    min-height: 46px;
+    padding: 0.55rem 1rem;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .input::placeholder {
+    color: #7a7591;
+  }
+  .input-pill {
+    border-radius: 999px;
+  }
+  .check {
+    /* 24px: ukuran target minimum WCAG 2.2 (2.5.8) */
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    accent-color: var(--navy-900);
+  }
+
+  /* ---------- label kecil */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.55rem;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--yellow-400);
+    color: var(--ink);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  /* ---------- pesan */
+  .notice {
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    background: var(--yellow-400);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .note {
+    padding: 0.75rem 1rem;
+    border: 2px dashed var(--ink);
+    border-radius: 14px;
+    background: var(--paper);
+  }
+  .alert-danger {
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--danger);
+    border-radius: 14px;
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+
+  /* ---------- pilihan berbentuk kartu (radio) */
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    background: var(--paper);
+    cursor: pointer;
+  }
+  .option:has(input:checked) {
+    background: var(--yellow-400);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ---------- tabel */
+  .table-brut th,
+  .table-brut td {
+    border-bottom: 2px solid var(--line);
+  }
+}
+
+/* ---------- motion */
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(2deg);
+  }
+}
+.anim-bob {
+  animation: bob 4s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+.mascot-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blink 5s infinite;
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(14deg);
+  }
+}
+.mascot-wave {
+  transform-box: fill-box;
+  transform-origin: 10% 90%;
+  animation: wiggle 1.4s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.anim-spin-slow {
+  animation: spin-slow 18s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

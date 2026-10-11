@@ -24,15 +24,13 @@ export function ModerateForm({
         name="reason" required minLength={5} maxLength={300}
         placeholder="Alasan (wajib, minimal 5 karakter)"
         aria-label="Alasan tindakan"
-        className="min-h-10 rounded-xl border border-line px-3 text-sm"
+        className="input text-sm"
       />
       <div className="flex flex-wrap gap-2">
         {buttons.map((b) => (
           <button
             key={b.intent} name="intent" value={b.intent} disabled={pending}
-            className={`min-h-10 rounded-full border px-4 text-sm font-semibold disabled:opacity-60 ${
-              b.danger ? "border-danger text-danger" : "border-navy-900 text-navy-900"
-            }`}
+            className={`btn btn-sm ${b.danger ? "btn-danger" : "btn-outline"}`}
           >
             {b.label}
           </button>

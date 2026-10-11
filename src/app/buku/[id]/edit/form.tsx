@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { updateListing, type EditState } from "./actions";
 import { CONDITIONS, CONDITION_LABEL, CONDITION_HELP, OFFER_TYPES, OFFER_LABEL } from "@/lib/schemas";
 
-const input = "min-h-11 w-full rounded-xl border border-line px-4 py-2";
+const input = "input";
 const FIELD_LABEL: Record<string, string> = {
   title: "Judul buku", course: "Mata kuliah", studyProgramId: "Prodi", condition: "Kondisi",
   offerType: "Mau diapakan", price: "Harga", swapWish: "Ingin ditukar dengan",
@@ -73,9 +73,9 @@ export function EditForm({
         <legend className="font-semibold">Kondisi</legend>
         <div className="mt-2 flex flex-col gap-2">
           {CONDITIONS.map((c) => (
-            <label key={c} className="flex items-start gap-3 rounded-xl border border-line p-3">
+            <label key={c} className="option has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-navy-600">
               <input type="radio" name="condition" value={c} checked={condition === c}
-                onChange={() => setCondition(c)} className="mt-1 size-5" />
+                onChange={() => setCondition(c)} className="check mt-0.5" />
               <span>
                 <span className="font-semibold">{CONDITION_LABEL[c]}</span>
                 <span className="block text-sm text-muted">{CONDITION_HELP[c]}</span>
@@ -89,7 +89,7 @@ export function EditForm({
         <legend className="font-semibold">Mau diapakan?</legend>
         <div className="mt-2 flex gap-2">
           {OFFER_TYPES.map((t) => (
-            <label key={t} className={`flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-full border px-3 text-center text-sm font-semibold ${offer === t ? "border-navy-900 bg-navy-900 text-white" : "border-line"}`}>
+            <label key={t} className="option min-h-11 flex-1 items-center justify-center text-center text-sm font-semibold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-navy-600">
               <input type="radio" name="offerType" value={t} checked={offer === t}
                 onChange={() => setOffer(t)} className="sr-only" />
               {OFFER_LABEL[t]}
@@ -119,7 +119,7 @@ export function EditForm({
 
       <div ref={summary} tabIndex={-1} aria-live="assertive">
         {(state.error || Object.keys(fe).length > 0) && (
-          <div role="alert" className="rounded-xl border border-danger px-4 py-3 text-danger">
+          <div role="alert" className="alert-danger">
             <p className="font-semibold">Perubahannya belum tersimpan.</p>
             {state.error && <p>{state.error}</p>}
             {Object.keys(fe).length > 0 && (
@@ -132,7 +132,7 @@ export function EditForm({
       </div>
 
       <button disabled={pending}
-        className="min-h-11 rounded-full bg-yellow-400 px-6 py-3 font-semibold text-navy-900 disabled:opacity-60">
+        className="btn btn-yellow disabled:opacity-60">
         {pending ? "Menyimpan…" : "Simpan perubahan"}
       </button>
     </form>

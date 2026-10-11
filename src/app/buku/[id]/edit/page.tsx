@@ -18,8 +18,8 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
   if (l.hidden_at || l.status === "selesai") {
     return (
       <main className="mx-auto w-full max-w-xl flex-1 px-4 py-6">
-        <h1 className="text-2xl font-bold text-navy-900">Edit buku</h1>
-        <p className="mt-3 rounded-xl border border-line px-4 py-3 text-muted">
+        <h1 className="text-2xl text-ink font-extrabold">Edit buku</h1>
+        <p className="card mt-3 px-4 py-3 text-muted">
           {l.hidden_at
             ? "Listing ini disembunyikan moderator, jadi tidak bisa diedit."
             : "Listing yang sudah selesai tidak bisa diedit. Gunakan posting ulang untuk buku yang sama."}
@@ -33,7 +33,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-6">
-      <h1 className="text-2xl font-bold text-navy-900">Edit buku</h1>
+      <h1 className="text-2xl text-ink font-extrabold">Edit buku</h1>
       <p className="mt-1 text-muted">Untuk mengganti foto, hapus listing lalu posting ulang.</p>
       <EditForm
         id={l.id}

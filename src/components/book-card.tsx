@@ -18,48 +18,56 @@ export type CardListing = {
 export const CARD_SELECT =
   "id, title, price, offer_type, condition, semester, status, created_at, study_programs(short_name), listing_photos(path_thumb, position)";
 
+// Latar sampul pengganti (saat foto belum ada/termuat), dipilih stabil dari judul
+const COVER_BG = ["bg-pink", "bg-mint", "bg-lilac", "bg-orange", "bg-yellow-400"];
+function coverBg(title: string) {
+  let h = 0;
+  for (let i = 0; i < title.length; i++) h = (h * 31 + title.charCodeAt(i)) >>> 0;
+  return COVER_BG[h % COVER_BG.length];
+}
+
 /**
  * Urutan informasi (PRD §9.2): foto → judul → harga → prodi · semester → waktu.
- * Tidak ada nomor WA di kartu (SEC-20).
+ * Tidak ada nomor WA di kartu (SEC-20). Seluruh kartu satu target sentuh.
  */
-export function BookCard({ b }: { b: CardListing }) {
+export function BookCard({ b, priority = false }: { b: CardListing; priority?: boolean }) {
   const cover = [...b.listing_photos].sort((x, y) => x.position - y.position)[0];
   const meta = [b.study_programs?.short_name, b.semester ? `Sem ${b.semester}` : null]
     .filter(Boolean)
     .join(" · ");
 
   return (
-    <Link
-      href={`/buku/${b.id}`}
-      className="flex flex-col overflow-hidden rounded-xl border border-line bg-white"
-    >
-      <div className="relative aspect-[3/4] bg-surface">
+    <Link href={`/buku/${b.id}`} className="card group flex h-full flex-col overflow-hidden">
+      <div className={`relative aspect-3/4 border-b-2 border-ink ${coverBg(b.title)}`}>
+        {/* Judul di belakang foto: tampil sebagai sampul jika foto gagal/terlambat */}
+        <span aria-hidden="true" className="font-display absolute inset-x-3 bottom-3 line-clamp-3 text-sm font-extrabold text-ink">
+          {b.title}
+        </span>
         {cover && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={photoUrl(cover.path_thumb)}
             alt={`Foto sampul ${b.title}`}
-            loading="lazy"
-            className="size-full object-cover"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
+            className="relative size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         )}
-        <span className="absolute left-2 top-2 rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-semibold text-navy-900">
-          {CONDITION_LABEL[b.condition]}
-        </span>
+        <span className="badge absolute left-2 top-2">{CONDITION_LABEL[b.condition]}</span>
       </div>
-      <div className="flex flex-col gap-1 p-3">
-        <h3 className="line-clamp-2 text-sm font-semibold text-ink">{b.title}</h3>
-        {b.offer_type === "jual" && b.price !== null ? (
-          <p className="font-bold text-navy-900">{rupiah(b.price)}</p>
-        ) : (
-          <p className="w-fit rounded-full border border-navy-900 px-2 text-xs font-bold text-navy-900">
-            {b.offer_type === "hibah" ? "Gratis" : "Tukar"}
-          </p>
-        )}
+      <div className="flex flex-1 flex-col gap-1 p-3">
+        <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{b.title}</h3>
+        <div className="mt-auto pt-1">
+          {b.offer_type === "jual" && b.price !== null ? (
+            <p className="font-display text-base font-extrabold text-ink">{rupiah(b.price)}</p>
+          ) : (
+            <span className={`badge ${b.offer_type === "hibah" ? "bg-mint" : "bg-lilac"}`}>
+              {b.offer_type === "hibah" ? "Gratis" : "Tukar"}
+            </span>
+          )}
+        </div>
         {meta && <p className="text-xs text-muted">{meta}</p>}
-        <p className="text-xs text-muted">
-          {b.status === "dipesan" ? "Dipesan" : timeAgo(b.created_at)}
-        </p>
+        <p className="text-xs text-muted">{b.status === "dipesan" ? "Dipesan" : timeAgo(b.created_at)}</p>
       </div>
     </Link>
   );

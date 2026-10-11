@@ -10,7 +10,7 @@ type Props = {
   defaults: { displayName: string; studyProgramId?: number; cohortYear?: number };
 };
 
-const input = "min-h-11 w-full rounded-xl border border-line px-4 py-2";
+const input = "input";
 
 export function OnboardingForm({ programs, next, defaults }: Props) {
   const [state, action, pending] = useActionState<FormState, FormData>(completeOnboarding, {});
@@ -37,7 +37,7 @@ export function OnboardingForm({ programs, next, defaults }: Props) {
       </label>
 
       <label className="flex items-center gap-3">
-        <input type="checkbox" name="isStaff" checked={staff} onChange={(e) => setStaff(e.target.checked)} className="size-5" />
+        <input type="checkbox" name="isStaff" checked={staff} onChange={(e) => setStaff(e.target.checked)} className="check" />
         <span>Aku dosen/staf</span>
       </label>
 
@@ -56,7 +56,7 @@ export function OnboardingForm({ programs, next, defaults }: Props) {
       </label>
 
       <label className="flex items-start gap-3">
-        <input type="checkbox" name="consent" className="mt-1 size-5" />
+        <input type="checkbox" name="consent" className="mt-1 check" />
         <span>
           Aku setuju dengan <Link href="/syarat" className="underline">Syarat Penggunaan</Link> dan{" "}
           <Link href="/kebijakan-privasi" className="underline">Kebijakan Privasi</Link>.
@@ -64,9 +64,9 @@ export function OnboardingForm({ programs, next, defaults }: Props) {
       </label>
       {fe.consent && <span role="alert" className="-mt-3 text-sm text-danger">{fe.consent}</span>}
 
-      {state.error && <p role="alert" className="rounded-xl border border-danger px-4 py-3 text-danger">{state.error}</p>}
+      {state.error && <p role="alert" className="alert-danger">{state.error}</p>}
 
-      <button disabled={pending} className="min-h-11 rounded-full bg-navy-900 px-6 py-3 font-semibold text-white disabled:opacity-60">
+      <button disabled={pending} className="btn btn-ink disabled:opacity-60">
         {pending ? "Menyimpan…" : "Simpan & lanjut"}
       </button>
     </form>

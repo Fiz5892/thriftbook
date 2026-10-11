@@ -13,7 +13,7 @@ export default async function DicariBaru({
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-6">
-      <h1 className="text-2xl font-bold text-navy-900">Pasang Dicari</h1>
+      <h1 className="text-2xl text-ink font-extrabold">Pasang Dicari</h1>
       <p className="mt-1 text-muted">
         Pemilik buku yang menemukan Dicari-mu bisa langsung menghubungimu lewat WhatsApp. Masa
         aktifnya 30 hari.

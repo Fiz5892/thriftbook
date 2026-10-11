@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { rupiah, timeAgo } from "@/lib/format";
 import { signOut, signOutEverywhere } from "./actions";
 import { setListingStatus } from "../buku/[id]/actions";
+import { DoneChoice } from "@/components/done-choice";
 
 const STATUS_LABEL: Record<string, string> = {
   aktif: "Aktif", dipesan: "Dipesan", selesai: "Selesai", kedaluwarsa: "Kedaluwarsa",
@@ -44,10 +45,10 @@ export default async function AkunPage() {
     }
   }
 
-  const link = "underline";
+  const link = "btn-link";
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
-      <h1 className="text-2xl font-bold text-navy-900">{profile.display_name}</h1>
+      <h1 className="text-2xl text-ink font-extrabold">{profile.display_name}</h1>
       <p className="text-muted">
         {auth.user.email}
         {profile.is_staff ? " · Dosen/Staf" : profile.cohort_year ? ` · Angkatan ${profile.cohort_year}` : ""}
@@ -59,16 +60,16 @@ export default async function AkunPage() {
 
       <h2 className="mt-8 text-lg font-semibold">Listing saya</h2>
       {!listings?.length ? (
-        <section className="mt-3 rounded-2xl border border-line p-6">
+        <section className="card card-lg mt-3 p-6">
           <p className="font-semibold">Kamu belum jual apa-apa.</p>
-          <Link href="/jual" className="mt-3 inline-block min-h-11 rounded-full bg-yellow-400 px-5 py-3 font-semibold text-navy-900">
+          <Link href="/jual" className="btn btn-yellow mt-3">
             Jual bukumu
           </Link>
         </section>
       ) : (
         <ul className="mt-3 flex flex-col gap-3">
           {listings.map((l) => (
-            <li key={l.id} className="rounded-xl border border-line p-4">
+            <li key={l.id} className="card p-4">
               <Link href={`/buku/${l.id}`} className="font-semibold text-navy-900 underline">{l.title}</Link>
               <p className="text-sm text-muted">
                 {l.offer_type === "jual" && l.price !== null ? rupiah(l.price) : l.offer_type === "hibah" ? "Gratis" : "Tukar"}
@@ -83,23 +84,23 @@ export default async function AkunPage() {
               {l.status === "kedaluwarsa" && (
                 <form action={setListingStatus} className="mt-3">
                   <input type="hidden" name="id" value={l.id} />
-                  <button name="status" value="aktif" className="min-h-10 rounded-full bg-yellow-400 px-4 text-sm font-semibold text-navy-900">
+                  <button name="status" value="aktif" className="btn btn-yellow btn-sm">
                     Masih ada? Aktifkan lagi
                   </button>
                 </form>
               )}
               {!l.hidden_at && (l.status === "aktif" || l.status === "dipesan") && (
-                <form action={setListingStatus} className="mt-3 flex gap-2">
-                  <input type="hidden" name="id" value={l.id} />
+                <div className="mt-3 flex flex-wrap items-start gap-2">
                   {l.status === "aktif" && (
-                    <button name="status" value="dipesan" className="min-h-10 rounded-full border border-navy-900 px-4 text-sm font-semibold text-navy-900">
-                      Dipesan
-                    </button>
+                    <form action={setListingStatus}>
+                      <input type="hidden" name="id" value={l.id} />
+                      <button name="status" value="dipesan" className="btn btn-outline btn-sm">
+                        Dipesan
+                      </button>
+                    </form>
                   )}
-                  <button name="status" value="selesai" className="min-h-10 rounded-full bg-yellow-400 px-4 text-sm font-semibold text-navy-900">
-                    Selesai
-                  </button>
-                </form>
+                  <DoneChoice id={l.id} action={setListingStatus} compact />
+                </div>
               )}
             </li>
           ))}
@@ -108,16 +109,16 @@ export default async function AkunPage() {
 
       <h2 className="mt-8 text-lg font-semibold">Dicari saya</h2>
       {!requests?.length ? (
-        <section className="mt-3 rounded-2xl border border-line p-6">
+        <section className="card card-lg mt-3 p-6">
           <p className="font-semibold">Belum ada Dicari.</p>
-          <Link href="/dicari/baru" className="mt-3 inline-block min-h-11 rounded-full border border-navy-900 px-5 py-3 font-semibold text-navy-900">
+          <Link href="/dicari/baru" className="btn btn-outline mt-3">
             Pasang Dicari
           </Link>
         </section>
       ) : (
         <ul className="mt-3 flex flex-col gap-3">
           {requests.map((r) => (
-            <li key={r.id} className="rounded-xl border border-line p-4">
+            <li key={r.id} className="card p-4">
               <Link href={`/dicari/${r.id}`} className="font-semibold text-navy-900 underline">{r.title}</Link>
               <p className="text-sm text-muted">
                 {STATUS_LABEL[r.status] ?? r.status} · {timeAgo(r.created_at)}
@@ -140,15 +141,15 @@ export default async function AkunPage() {
         <li><Link href="/kebijakan-privasi" className={link}>Kebijakan Privasi</Link></li>
         <li><Link href="/syarat" className={link}>Syarat Penggunaan</Link></li>
         <li><Link href="/panduan-cod" className={link}>Panduan COD</Link></li>
-        <li><Link href="/akun/hapus" className="text-danger underline">Hapus akun</Link></li>
+        <li><Link href="/akun/hapus" className="inline-flex min-h-6 items-center py-1 text-danger underline">Hapus akun</Link></li>
       </ul>
 
       <div className="mt-6 flex flex-wrap gap-3">
         <form action={signOut}>
-          <button className="min-h-11 rounded-full border border-navy-900 px-6 font-semibold text-navy-900">Keluar</button>
+          <button className="btn btn-outline">Keluar</button>
         </form>
         <form action={signOutEverywhere}>
-          <button className="min-h-11 rounded-full border border-line px-6 text-sm font-semibold">
+          <button className="btn btn-outline btn-sm">
             Keluar dari semua perangkat
           </button>
         </form>

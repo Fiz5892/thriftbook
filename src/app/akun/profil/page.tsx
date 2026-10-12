@@ -1,10 +1,11 @@
 import { requireCompleteUser } from "@/lib/session";
+import { getPrograms } from "@/lib/public-data";
 import { ProfileForm } from "./form";
 
 export default async function ProfilPage() {
   const { supabase, user } = await requireCompleteUser("/akun/profil");
   const [{ data: programs }, { data: p }, { data: c }] = await Promise.all([
-    supabase.from("study_programs").select("id, short_name").eq("is_active", true).order("short_name"),
+    getPrograms().then((data) => ({ data })),
     supabase.from("profiles").select("display_name, study_program_id, cohort_year, is_staff").eq("id", user.id).single(),
     supabase.from("profile_contacts").select("whatsapp_e164, hidden").eq("profile_id", user.id).single(),
   ]);

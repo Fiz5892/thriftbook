@@ -16,10 +16,14 @@ export function Mascot({
   mood = "happy",
   className = "",
   title,
+  animate = false,
 }: {
   mood?: MascotMood;
   className?: string;
   title?: string;
+  /** Kedip & lambaian. Animasi elemen di dalam SVG berjalan di main thread, jadi hanya untuk
+      maskot utama di halaman, bukan semua. */
+  animate?: boolean;
 }) {
   const labelled = Boolean(title);
   return (
@@ -76,11 +80,11 @@ export function Mascot({
         </g>
       ) : (
         <g>
-          <g className="mascot-eye">
+          <g className={animate ? "mascot-eye" : undefined}>
             <ellipse cx={mood === "search" ? 94 : 91} cy="92" rx="6.5" ry="8" fill={INK} />
             <circle cx={mood === "search" ? 96 : 93} cy="89" r="2.2" fill="#fff" />
           </g>
-          <g className="mascot-eye">
+          <g className={animate ? "mascot-eye" : undefined}>
             <ellipse cx={mood === "search" ? 128 : 125} cy="92" rx="6.5" ry="8" fill={INK} />
             <circle cx={mood === "search" ? 130 : 127} cy="89" r="2.2" fill="#fff" />
           </g>
@@ -98,7 +102,7 @@ export function Mascot({
 
       {/* tangan kanan */}
       {mood === "wave" && (
-        <g className="mascot-wave">
+        <g className={animate ? "mascot-wave" : undefined}>
           <path d="M156 100 C 172 90, 180 74, 178 56" fill="none" stroke={INK} strokeWidth="6" strokeLinecap="round" />
           <circle cx="178" cy="52" r="6" fill="var(--paper)" stroke={INK} strokeWidth="4" />
         </g>

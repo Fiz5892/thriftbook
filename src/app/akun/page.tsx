@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/auth";
 import { rupiah, timeAgo } from "@/lib/format";
 import { signOut, signOutEverywhere } from "./actions";
 import { setListingStatus } from "../buku/[id]/actions";
@@ -14,8 +15,9 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default async function AkunPage() {
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) redirect("/masuk?next=/akun");
+  const viewer = await getViewer(supabase);
+  if (!viewer) redirect("/masuk?next=/akun");
+  const auth = { user: viewer };
 
   const [{ data: profile }, { data: listings }, { data: requests }] = await Promise.all([
     supabase.from("profiles").select("display_name, cohort_year, is_staff, role").eq("id", auth.user.id).maybeSingle(),

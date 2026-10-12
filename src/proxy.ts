@@ -50,7 +50,9 @@ export async function proxy(request: NextRequest) {
         },
       },
     );
-    await supabase.auth.getUser(); // memvalidasi ke server Auth & me-refresh token
+    // getClaims: verifikasi JWT lokal (ES256 + JWKS ter-cache) dan refresh token hanya bila
+    // kedaluwarsa. getUser() di sini dulu menambah satu round-trip ke server Auth per permintaan.
+    await supabase.auth.getClaims();
   }
 
   response.headers.set("Content-Security-Policy", csp);

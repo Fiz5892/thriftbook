@@ -1,6 +1,7 @@
 import "server-only";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/auth";
 
 /**
  * Pastikan pengguna adalah admin. Non-admin mendapat 404 (bukan 403) agar keberadaan
@@ -8,10 +9,10 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function requireAdmin() {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) notFound();
+  const user = await getViewer(supabase);
+  if (!user) notFound();
   const { data: p } = await supabase
-    .from("profiles").select("role, banned_at").eq("id", data.user.id).maybeSingle();
+    .from("profiles").select("role, banned_at").eq("id", user.id).maybeSingle();
   if (!p || p.role !== "admin" || p.banned_at) notFound();
-  return { supabase, user: data.user };
+  return { supabase, user };
 }

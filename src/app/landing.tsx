@@ -1,6 +1,6 @@
 import Link from "next/link";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { BookCard, CARD_SELECT, type CardListing } from "@/components/book-card";
+import { BookCard } from "@/components/book-card";
+import { getListingStats, getOpenRequests, getRecentListings } from "@/lib/public-data";
 import { Mascot } from "@/components/mascot";
 import { Asterisk, BookStack, Sparkle, Squiggle, Starburst } from "@/components/decor";
 import { Parallax, Reveal, ScrollMarquee, ScrollTrail, type TrailStep } from "@/components/motion";
@@ -45,16 +45,11 @@ const WAYS = [
 ];
 
 /** Landing page untuk tamu: memperkenalkan thriftbook, lalu mengarahkan ke katalog atau masuk. */
-export async function Landing({ supabase }: { supabase: SupabaseClient }) {
-  const [{ count: activeCount }, { count: wantedCount }, { data: recent }] = await Promise.all([
-    supabase.from("listings").select("id", { count: "exact", head: true }).eq("status", "aktif").is("hidden_at", null),
-    supabase.from("book_requests").select("id", { count: "exact", head: true }).eq("status", "terbuka").is("hidden_at", null),
-    supabase
-      .from("listings").select(CARD_SELECT)
-      .eq("status", "aktif").is("hidden_at", null)
-      .order("created_at", { ascending: false }).limit(4),
-  ]);
-  const items = (recent ?? []) as unknown as CardListing[];
+export async function Landing() {
+  // Semua dari cache publik (≤ 60 dtk): landing tidak menyentuh database di sebagian besar kunjungan
+  const [stats, wanted, items] = await Promise.all([getListingStats(), getOpenRequests(1), getRecentListings(4)]);
+  const activeCount = stats.total;
+  const wantedCount = wanted.total;
 
   return (
     <main className="flex-1">
@@ -87,6 +82,7 @@ export async function Landing({ supabase }: { supabase: SupabaseClient }) {
               <BookStack className="absolute bottom-5 left-1/2 w-4/5 -translate-x-1/2" />
               <Mascot
                 mood="wave"
+                animate
                 title="Tibo, maskot thriftbook, melambai"
                 className="anim-bob absolute bottom-[27%] left-1/2 w-3/5 -translate-x-1/2"
               />
@@ -108,7 +104,7 @@ export async function Landing({ supabase }: { supabase: SupabaseClient }) {
       </div>
 
       {/* ---------------- Kenapa */}
-      <section className="mx-auto max-w-6xl px-4 pt-20">
+      <section className="cv-auto mx-auto max-w-6xl px-4 pt-20">
         <Reveal>
           <h2 className="max-w-2xl text-3xl font-extrabold uppercase md:text-4xl">Kenapa nggak lewat menfess aja?</h2>
           <p className="mt-3 max-w-2xl">
@@ -151,7 +147,7 @@ export async function Landing({ supabase }: { supabase: SupabaseClient }) {
       </section>
 
       {/* ---------------- Tiga cara */}
-      <section className="mx-auto max-w-6xl px-4 pt-24">
+      <section className="cv-auto mx-auto max-w-6xl px-4 pt-24">
         <Reveal>
           <h2 className="text-3xl font-extrabold uppercase md:text-4xl">Mau diapakan bukumu?</h2>
         </Reveal>
@@ -170,7 +166,7 @@ export async function Landing({ supabase }: { supabase: SupabaseClient }) {
 
       {/* ---------------- Katalog nyata */}
       {items.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 pt-24">
+        <section className="cv-auto mx-auto max-w-6xl px-4 pt-24">
           <Reveal>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -190,7 +186,7 @@ export async function Landing({ supabase }: { supabase: SupabaseClient }) {
       )}
 
       {/* ---------------- Aman */}
-      <section className="mx-auto max-w-6xl px-4 pt-24">
+      <section className="cv-auto mx-auto max-w-6xl px-4 pt-24">
         <Reveal>
           <h2 className="text-3xl font-extrabold uppercase md:text-4xl">Biar tetap aman</h2>
         </Reveal>
@@ -218,7 +214,7 @@ export async function Landing({ supabase }: { supabase: SupabaseClient }) {
       </section>
 
       {/* ---------------- Ajakan akhir */}
-      <section className="mx-auto max-w-6xl px-4 pt-24">
+      <section className="cv-auto mx-auto max-w-6xl px-4 pt-24">
         <Reveal>
           <div className="card card-lg relative overflow-hidden bg-navy-900 p-8 text-white md:p-12">
             <div className="relative z-10 max-w-xl">

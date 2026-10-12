@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { revalidateTag } from "next/cache";
+import { TAG } from "@/lib/public-data";
 
 const DAY = 86400_000;
 const BUCKET = "listing-photos";
@@ -79,6 +81,10 @@ export async function GET(request: NextRequest) {
     await db.from("storage_deletion_queue").delete().in("path", q.data.map((x) => x.path));
   }
   result.antrean_dihapus = q.data?.length ?? 0;
+
+  // Listing/Dicari yang baru kedaluwarsa harus hilang dari cache publik sekarang juga
+  revalidateTag(TAG.listings, { expire: 0 });
+  revalidateTag(TAG.requests, { expire: 0 });
 
   return NextResponse.json({ ok: true, ...result }, { headers: { "Cache-Control": "no-store" } });
 }

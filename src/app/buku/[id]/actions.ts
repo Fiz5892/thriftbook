@@ -1,7 +1,8 @@
 "use server";
 
+import { TAG } from "@/lib/public-data";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -33,6 +34,7 @@ export async function setListingStatus(formData: FormData) {
       p_props: { listing_id: id.data, status: status.data },
     }).then(() => {}, () => {});
   }
+  if (data?.length) revalidateTag(TAG.listings, { expire: 0 });
   revalidatePath(`/buku/${id.data}`);
   revalidatePath("/akun");
 }
@@ -58,5 +60,6 @@ export async function deleteListing(formData: FormData) {
       .from("listing-photos")
       .remove(photos.flatMap((p) => [p.path_full, p.path_thumb]));
   }
+  if (deleted?.length) revalidateTag(TAG.listings, { expire: 0 });
   redirect("/akun");
 }

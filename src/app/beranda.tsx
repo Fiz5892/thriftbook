@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { BookCard, CARD_SELECT, type CardListing } from "@/components/book-card";
+import { BookCard } from "@/components/book-card";
+import { getListingStats, getOpenRequests, getPrograms, getRecentListings } from "@/lib/public-data";
 import { Mascot } from "@/components/mascot";
 import { Squiggle } from "@/components/decor";
 import { timeAgo } from "@/lib/format";
@@ -11,28 +12,22 @@ const initials = (s: string) =>
 
 /** Beranda untuk pengguna yang sudah masuk: katalog terbaru, per prodi, dan Dicari terbaru. */
 export async function Beranda({ supabase, userId }: { supabase: SupabaseClient; userId: string }) {
-  const [{ data: me }, { data: programs }, { data: counts }, { data: recent }, { data: wanted }] = await Promise.all([
+  // Hanya nama pengguna yang diambil per permintaan; sisanya data publik ter-cache
+  const [{ data: me }, programs, stats, recent, open] = await Promise.all([
     supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
-    supabase.from("study_programs").select("id, slug, short_name").eq("is_active", true),
-    supabase.from("listings").select("study_program_id").eq("status", "aktif").is("hidden_at", null),
-    supabase
-      .from("listings").select(CARD_SELECT)
-      .eq("status", "aktif").is("hidden_at", null)
-      .order("created_at", { ascending: false }).limit(10),
-    supabase
-      .from("book_requests").select("id, title, course_name_snapshot, created_at")
-      .eq("status", "terbuka").is("hidden_at", null)
-      .order("created_at", { ascending: false }).limit(3),
+    getPrograms(),
+    getListingStats(),
+    getRecentListings(10),
+    getOpenRequests(3),
   ]);
+  const wanted = open.items;
 
-  const perProdi = new Map<number, number>();
-  for (const c of counts ?? []) perProdi.set(c.study_program_id, (perProdi.get(c.study_program_id) ?? 0) + 1);
-  const topProgram = (programs ?? [])
-    .map((p) => ({ ...p, n: perProdi.get(p.id) ?? 0 }))
+  const topProgram = programs
+    .map((p) => ({ ...p, n: stats.perProgram[p.id] ?? 0 }))
     .filter((p) => p.n > 0)
     .sort((a, b) => b.n - a.n)
     .slice(0, 6);
-  const items = (recent ?? []) as unknown as CardListing[];
+  const items = recent;
   const name = me?.display_name?.split(" ")[0];
 
   return (
@@ -57,7 +52,7 @@ export async function Beranda({ supabase, userId }: { supabase: SupabaseClient; 
             <Link href="/dicari/baru" className="btn btn-outline btn-sm">Pasang Dicari</Link>
           </div>
         </div>
-        <Mascot mood="wave" className="anim-bob absolute -bottom-6 right-2 hidden w-56 md:block lg:right-10 lg:w-64" />
+        <Mascot mood="wave" animate className="anim-bob absolute -bottom-6 right-2 hidden w-56 md:block lg:right-10 lg:w-64" />
         <Squiggle className="absolute right-64 top-6 hidden w-40 lg:block" />
       </section>
 
@@ -105,14 +100,14 @@ export async function Beranda({ supabase, userId }: { supabase: SupabaseClient; 
         </>
       )}
 
-      {(wanted ?? []).length > 0 && (
+      {wanted.length > 0 && (
         <section className="mt-10">
           <div className="flex items-end justify-between gap-4">
             <h2 className="text-xl font-extrabold">Lagi dicari orang</h2>
             <Link href="/dicari" className="btn-link text-sm">Lihat semua</Link>
           </div>
           <ul className="mt-4 grid gap-3 md:grid-cols-3">
-            {wanted!.map((r, i) => (
+            {wanted.map((r, i) => (
               <li key={r.id}>
                 <Link href={`/dicari/${r.id}`} className={`card flex h-full flex-col p-4 ${TONES[(i + 2) % TONES.length]}`}>
                   <span className="text-xs font-semibold uppercase">Dicari</span>

@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/auth";
+import { getPrograms } from "@/lib/public-data";
 import { OnboardingForm } from "./form";
 
 export default async function OnboardingPage({
@@ -9,15 +11,15 @@ export default async function OnboardingPage({
 }) {
   const { next } = await searchParams;
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) redirect("/masuk?next=/onboarding");
+  const viewer = await getViewer(supabase);
+  if (!viewer) redirect("/masuk?next=/onboarding");
 
   const [{ data: programs }, { data: profile }] = await Promise.all([
-    supabase.from("study_programs").select("id, short_name").eq("is_active", true).order("short_name"),
-    supabase.from("profiles").select("display_name, study_program_id, cohort_year").eq("id", auth.user.id).maybeSingle(),
+    getPrograms().then((data) => ({ data })),
+    supabase.from("profiles").select("display_name, study_program_id, cohort_year").eq("id", viewer.id).maybeSingle(),
   ]);
 
-  const guess = (auth.user.user_metadata?.full_name as string | undefined)?.split(" ")[0] ?? "";
+  const guess = viewer.fullName?.split(" ")[0] ?? "";
 
   return (
     <main className="mx-auto w-full max-w-md flex-1 px-4 py-8">

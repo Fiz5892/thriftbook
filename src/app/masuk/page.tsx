@@ -18,7 +18,7 @@ export default async function MasukPage({
     <main className="mx-auto flex w-full max-w-4xl flex-1 items-center px-4 py-10 md:py-16">
       <div className="card card-lg grid w-full overflow-hidden md:grid-cols-2">
         <div className="relative hidden place-items-center border-r-2 border-ink bg-lilac p-10 md:grid">
-          <Mascot mood="wave" className="anim-bob w-56" />
+          <Mascot mood="wave" animate className="anim-bob w-56" />
           <Starburst className="absolute left-6 top-6 size-24 -rotate-12">Khusus sivitas UM</Starburst>
         </div>
         <div className="flex flex-col gap-5 p-6 md:p-10">

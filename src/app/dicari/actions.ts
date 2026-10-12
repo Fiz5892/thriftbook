@@ -1,7 +1,8 @@
 "use server";
 
+import { TAG } from "@/lib/public-data";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { requireCompleteUser } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -82,6 +83,7 @@ export async function createRequest(
     p_name: "request_created", p_props: { request_id: data.id },
   }).then(() => {}, () => {});
 
+  revalidateTag(TAG.requests, { expire: 0 });
   redirect(`/dicari/${data.id}?baru=1`);
 }
 
@@ -110,6 +112,7 @@ export async function closeRequest(formData: FormData) {
       p_name: "request_status_changed", p_props: { request_id: id.data, status: outcome.data },
     }).then(() => {}, () => {});
   }
+  if (data?.length) revalidateTag(TAG.requests, { expire: 0 });
   revalidatePath(`/dicari/${id.data}`);
   revalidatePath("/akun");
   redirect(`/dicari/${id.data}`);

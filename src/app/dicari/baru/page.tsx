@@ -1,4 +1,5 @@
 import { requireCompleteUser } from "@/lib/session";
+import { getPrograms } from "@/lib/public-data";
 import { RequestForm } from "./form";
 
 export default async function DicariBaru({
@@ -7,9 +8,7 @@ export default async function DicariBaru({
   searchParams: Promise<{ q?: string; course?: string }>;
 }) {
   const { q, course } = await searchParams;
-  const { supabase } = await requireCompleteUser("/dicari/baru");
-  const { data: programs } = await supabase
-    .from("study_programs").select("id, short_name").eq("is_active", true).order("short_name");
+  const [, programs] = await Promise.all([requireCompleteUser("/dicari/baru"), getPrograms()]);
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-6">
@@ -19,7 +18,7 @@ export default async function DicariBaru({
         aktifnya 30 hari.
       </p>
       <RequestForm
-        programs={programs ?? []}
+        programs={programs}
         initial={{ title: (q ?? "").slice(0, 120), course: (course ?? "").slice(0, 80) }}
       />
     </main>

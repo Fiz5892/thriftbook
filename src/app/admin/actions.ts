@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { TAG } from "@/lib/public-data";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -100,6 +101,8 @@ export async function moderate(_prev: ModerateState, form: FormData): Promise<Mo
   });
   if (logErr) return { error: "Aksi berhasil, tapi gagal dicatat di riwayat. Segera cek manual." };
 
+  revalidateTag(TAG.listings, { expire: 0 });
+  revalidateTag(TAG.requests, { expire: 0 });
   revalidatePath("/admin");
   revalidatePath("/admin/riwayat");
   return { ok: "Tersimpan." };

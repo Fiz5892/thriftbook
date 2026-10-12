@@ -7,7 +7,10 @@ export function SwRegister() {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") return;
     if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    // Daftarkan saat browser senggang supaya tidak bersaing dengan hidrasi halaman
+    const run = () => navigator.serviceWorker.register("/sw.js").catch(() => {});
+    if ("requestIdleCallback" in window) window.requestIdleCallback(run, { timeout: 5000 });
+    else setTimeout(run, 3000);
   }, []);
   return null;
 }

@@ -1,5 +1,7 @@
 "use server";
 
+import { TAG } from "@/lib/public-data";
+import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCompleteUser } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -129,5 +131,6 @@ export async function createListing(
     p_props: { listing_id: listing.id, offer_type: v.offerType },
   }).then(() => {}, () => {});
 
+  revalidateTag(TAG.listings, { expire: 0 }); // listing baru langsung muncul di beranda/landing
   redirect(`/buku/${listing.id}?baru=1`);
 }

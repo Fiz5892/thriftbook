@@ -37,7 +37,7 @@ export function SiteHeader({ loggedIn }: { loggedIn: boolean }) {
   const desktopLinks = ITEMS.filter((i) => i.href !== "/jual" && (loggedIn || i.href !== "/akun"));
 
   return (
-    <header className="sticky top-0 z-30 border-b-2 border-ink bg-cream/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 border-b-2 border-ink bg-cream">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
         <Link href="/" aria-label="thriftbook, ke beranda" className="flex min-h-11 items-center">
           <Logo />

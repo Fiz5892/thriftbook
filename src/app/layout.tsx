@@ -5,6 +5,7 @@ import { BottomNav, SiteHeader } from "@/components/nav";
 import { SiteFooter } from "@/components/footer";
 import { SwRegister } from "@/components/sw-register";
 import { createClient } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/auth";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -14,11 +15,12 @@ const poppins = Poppins({
   display: "swap",
 });
 
-// Huruf display lebar untuk judul, menggantikan kesan "template" huruf biasa
+// Huruf display lebar untuk judul. Hanya bobot 800 yang dipakai (judul memakai font-extrabold);
+// memuat 700 + 800 membuat Next mengambil file variabel ±50 KB.
 const display = Unbounded({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["700", "800"],
+  weight: "800",
   display: "swap",
 });
 
@@ -40,9 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   let loggedIn = false;
   try {
-    const supabase = await createClient();
-    const { data } = await supabase.auth.getUser();
-    loggedIn = Boolean(data.user);
+    loggedIn = Boolean(await getViewer(await createClient()));
   } catch {
     loggedIn = false;
   }

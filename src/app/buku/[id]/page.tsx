@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/auth";
 import { CONDITION_LABEL, CONDITION_HELP, type CONDITIONS } from "@/lib/schemas";
 import { photoUrl, rupiah, timeAgo } from "@/lib/format";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -36,8 +37,8 @@ async function load(id: string) {
   const { data: owner } = await supabase
     .from("public_profiles").select("display_name, cohort_year, is_staff")
     .eq("id", l.owner_id).maybeSingle();
-  const { data: auth } = await supabase.auth.getUser();
-  return { supabase, l, owner, userId: auth.user?.id ?? null };
+  const viewer = await getViewer(supabase);
+  return { supabase, l, owner, userId: viewer?.id ?? null };
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {

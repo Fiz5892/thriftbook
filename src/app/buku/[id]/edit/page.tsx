@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireCompleteUser } from "@/lib/session";
+import { getPrograms } from "@/lib/public-data";
 import { EditForm } from "./form";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -28,8 +29,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  const { data: programs } = await supabase
-    .from("study_programs").select("id, short_name").eq("is_active", true).order("short_name");
+  const { data: programs } = await getPrograms().then((data) => ({ data }));
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-6">

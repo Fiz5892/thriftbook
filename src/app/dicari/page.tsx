@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getPrograms } from "@/lib/public-data";
 import { escapeLike } from "@/lib/schemas";
 import { rupiah, timeAgo } from "@/lib/format";
 import { Mascot } from "@/components/mascot";
@@ -15,9 +16,8 @@ export default async function DicariPage({
   const sp = await searchParams;
   const supabase = await createClient();
 
-  const { data: programs } = await supabase
-    .from("study_programs").select("id, slug, short_name").eq("is_active", true).order("short_name");
-  const prodi = programs?.find((p) => p.slug === sp.prodi);
+  const programs = await getPrograms();
+  const prodi = programs.find((p) => p.slug === sp.prodi);
 
   let query = supabase
     .from("book_requests")
@@ -68,7 +68,7 @@ export default async function DicariPage({
           aria-current={!prodi ? "true" : undefined} className="chip">
           Semua
         </Link>
-        {programs?.map((p) => (
+        {programs.map((p) => (
           <Link key={p.id} href={href({ prodi: p.slug, cursor: undefined })}
             aria-current={prodi?.id === p.id ? "true" : undefined} className="chip">
             {p.short_name}

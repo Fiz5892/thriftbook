@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/auth";
 import { BookCard, CARD_SELECT, type CardListing } from "@/components/book-card";
 import { ReportBox } from "@/components/report-box";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -33,11 +34,11 @@ export default async function DicariDetail({
     .eq("id", id).maybeSingle();
   if (!r) notFound();
 
-  const [{ data: auth }, { data: owner }] = await Promise.all([
-    supabase.auth.getUser(),
+  const [viewer, { data: owner }] = await Promise.all([
+    getViewer(supabase),
     supabase.from("public_profiles").select("display_name, cohort_year, is_staff").eq("id", r.requester_id).maybeSingle(),
   ]);
-  const userId = auth.user?.id ?? null;
+  const userId = viewer?.id ?? null;
   const isOwner = userId === r.requester_id;
   const open = r.status === "terbuka" && new Date(r.expires_at).getTime() > nowMs();
 

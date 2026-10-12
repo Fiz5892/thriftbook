@@ -1,5 +1,7 @@
 "use server";
 
+import { TAG } from "@/lib/public-data";
+import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -61,5 +63,6 @@ export async function createReport(formData: FormData) {
   await supabase.rpc("log_event", { p_name: "report_created", p_props: { kind, reason } })
     .then(() => {}, () => {});
 
+  if (distinct >= 3) { revalidateTag(TAG.listings, { expire: 0 }); revalidateTag(TAG.requests, { expire: 0 }); }
   redirect(`${back}?lapor=ok`);
 }

@@ -288,6 +288,13 @@ h2,
   }
 }
 
+/* Bagian panjang di bawah lipatan: browser melewati layout & paint sampai mendekati layar.
+   "auto" mengingat tinggi terakhir agar scrollbar tidak melompat. */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 720px;
+}
+
 /* ---------- motion */
 @keyframes bob {
   0%,

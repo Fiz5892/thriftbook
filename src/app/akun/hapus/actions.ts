@@ -1,5 +1,7 @@
 "use server";
 
+import { TAG } from "@/lib/public-data";
+import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -48,5 +50,7 @@ export async function deleteMyAccount(_prev: DeleteState, form: FormData): Promi
   }
 
   await supabase.auth.signOut().catch(() => {});
+  revalidateTag(TAG.listings, { expire: 0 });
+  revalidateTag(TAG.requests, { expire: 0 });
   redirect("/?akun=dihapus");
 }

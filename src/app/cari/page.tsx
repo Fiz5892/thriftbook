@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getPrograms } from "@/lib/public-data";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { after } from "next/server";
 import { BookCard, CARD_SELECT, type CardListing } from "@/components/book-card";
 import {
   CONDITIONS, CONDITION_LABEL, OFFER_TYPES, OFFER_LABEL, escapeLike,
@@ -22,9 +24,8 @@ export default async function CariPage({ searchParams }: { searchParams: Promise
   const sp = await searchParams;
   const supabase = await createClient();
 
-  const { data: programs } = await supabase
-    .from("study_programs").select("id, slug, short_name").eq("is_active", true).order("short_name");
-  const prodi = programs?.find((p) => p.slug === sp.prodi);
+  const programs = await getPrograms();
+  const prodi = programs.find((p) => p.slug === sp.prodi);
 
   const q = (sp.q ?? "").trim().slice(0, 80);
   const qWords = q.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6);
@@ -91,15 +92,15 @@ export default async function CariPage({ searchParams }: { searchParams: Promise
 
   // FR-23 / M-07: catat pencarian TANPA identitas pengguna (AC-23.2)
   if (!error && qWords.length > 0 && !sp.cursor) {
-    try {
-      await createAdminClient().from("events").insert({
-        name: "search_performed",
-        user_id: null,
-        props: { q: q.toLowerCase(), n: items.length, fuzzy, prodi: prodi?.slug ?? null },
-      });
-    } catch {
-      // metrik tidak boleh menggagalkan pencarian
-    }
+    const props = { q: q.toLowerCase(), n: items.length, fuzzy, prodi: prodi?.slug ?? null };
+    // Dijalankan setelah respons terkirim: tidak menambah waktu tunggu pengguna
+    after(async () => {
+      try {
+        await createAdminClient().from("events").insert({ name: "search_performed", user_id: null, props });
+      } catch {
+        // metrik tidak boleh mengganggu pencarian
+      }
+    });
   }
 
   // FR-24: mata kuliah terbanyak di prodi terpilih. Label "terbanyak", bukan "sering dicari",
@@ -138,7 +139,7 @@ export default async function CariPage({ searchParams }: { searchParams: Promise
 
       <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0" aria-label="Filter prodi">
         <Chip href={keep({ prodi: undefined, cursor: undefined })} active={!prodi}>Semua</Chip>
-        {programs?.map((p) => (
+        {programs.map((p) => (
           <Chip key={p.id} href={keep({ prodi: p.slug, cursor: undefined })} active={prodi?.id === p.id}>
             {p.short_name}
           </Chip>

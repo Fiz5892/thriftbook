@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/auth";
 import { DeleteForm } from "./form";
 
 export default async function HapusAkunPage() {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) redirect("/masuk?next=/akun/hapus");
+  if (!(await getViewer(supabase))) redirect("/masuk?next=/akun/hapus");
 
   return (
     <main className="mx-auto w-full max-w-md flex-1 px-4 py-6">

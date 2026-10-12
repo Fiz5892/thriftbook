@@ -1,7 +1,8 @@
 "use server";
 
+import { TAG } from "@/lib/public-data";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { requireCompleteUser } from "@/lib/session";
 import { listingSchema } from "@/lib/schemas";
@@ -79,6 +80,7 @@ export async function updateListing(_prev: EditState, form: FormData): Promise<E
     }).then(() => {}, () => {});
   }
 
+  revalidateTag(TAG.listings, { expire: 0 });
   revalidatePath(`/buku/${id.data}`);
   redirect(`/buku/${id.data}`);
 }

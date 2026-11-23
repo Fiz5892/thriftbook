@@ -116,7 +116,7 @@ export async function saveReview(_prev: ReviewState, form: FormData): Promise<Re
   );
   if (error) {
     return {
-      error: "Ulasan gagal disimpan. Kamu bisa mengulas setelah menghubungi penjual (buku fisik) atau checkout e-book.",
+      error: "Ulasan gagal disimpan. Ulasan e-book butuh checkout dulu.",
       values,
     };
   }

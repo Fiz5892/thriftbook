@@ -97,7 +97,6 @@ export default async function BukuPage({
   const isOwner = userId === l.owner_id;
   const isEbook = l.format === "ebook";
   const cond = l.condition as (typeof CONDITIONS)[number] | null;
-  const pendingReview = l.hidden_reason === "menunggu_tinjauan_ebook";
   const photos = [...(l.listing_photos as { path_full: string; position: number; width: number; height: number }[])]
     .sort((a, b) => a.position - b.position);
   const course = (l.courses as unknown as { name: string } | null)?.name;
@@ -122,7 +121,11 @@ export default async function BukuPage({
   const { data: order } = isEbook && userId
     ? await supabase.from("ebook_orders").select("status").eq("listing_id", l.id).eq("status", "lunas").maybeSingle()
     : { data: null };
-  const hasAccess = isEbook && (isOwner || !!order);
+  // Admin boleh membuka file untuk memeriksa laporan (route file juga mengizinkan admin)
+  const { data: me } = isEbook && userId
+    ? await supabase.from("profiles").select("role").eq("id", userId).maybeSingle()
+    : { data: null };
+  const hasAccess = isEbook && (isOwner || !!order || me?.role === "admin");
   const [{ data: reviewRows }, canReviewRes] = await Promise.all([
     supabase.from("reviews").select("id, reviewer_id, rating, comment, created_at")
       .eq("listing_id", l.id).order("created_at", { ascending: false }).limit(100),
@@ -141,8 +144,8 @@ export default async function BukuPage({
       {baru && isOwner && (
         <div role="status" className="notice mb-4">
           <p className="font-semibold">
-            {pendingReview
-              ? "E-bookmu sudah terkirim. Tim kami memeriksa file dan hak ciptanya dulu; setelah disetujui, e-book tampil di katalog."
+            {isEbook
+              ? "E-bookmu sudah tayang di katalog."
               : "Bukumu sudah tayang. Jangan lupa tandai ‘Selesai’ kalau sudah laku."}
           </p>
           {seekers.length > 0 && (
@@ -165,9 +168,7 @@ export default async function BukuPage({
       )}
       {isOwner && l.hidden_at && (
         <p role="status" className="alert-danger mb-4">
-          {pendingReview
-            ? "E-book ini sedang diperiksa tim (file dan hak cipta). Belum tampil di katalog."
-            : `Listing ini disembunyikan moderator${l.hidden_reason === "auto_3_reports" ? " sementara menunggu tinjauan." : "."}`}
+          Listing ini disembunyikan moderator{l.hidden_reason === "auto_3_reports" ? " sementara menunggu tinjauan." : "."}
         </p>
       )}
 
@@ -222,7 +223,7 @@ export default async function BukuPage({
         {sold ? (
           <p className="card px-4 py-3 text-muted">Buku ini sudah tidak tersedia.</p>
         ) : isOwner ? (
-          <OwnerControls id={l.id} status={l.status} expired={expired} isEbook={isEbook} />
+          <OwnerControls id={l.id} status={l.status} expired={expired} isEbook={isEbook} free={l.offer_type === "hibah"} />
         ) : isEbook ? (
           <EbookBox id={l.id} price={l.price} hasAccess={hasAccess} loggedIn={!!userId} />
         ) : reserved ? (
@@ -271,9 +272,7 @@ export default async function BukuPage({
       <Reviews
         listingId={l.id} reviews={reviews} names={names} userId={userId} isOwner={isOwner}
         canReview={canReviewRes.data === true}
-        hint={isEbook
-          ? "Checkout e-book ini dulu untuk memberi ulasan."
-          : "Kamu bisa mengulas setelah menghubungi penjual lewat WhatsApp."}
+        hint="Checkout e-book ini dulu untuk memberi ulasan."
       />
     </main>
   );
@@ -311,7 +310,7 @@ function EbookBox({ id, price, hasAccess, loggedIn }: {
   );
 }
 
-function OwnerControls({ id, status, expired, isEbook }: { id: string; status: string; expired: boolean; isEbook: boolean }) {
+function OwnerControls({ id, status, expired, isEbook, free }: { id: string; status: string; expired: boolean; isEbook: boolean; free: boolean }) {
   const STATUS: Record<string, { label: string; dot: string }> = {
     aktif: { label: "Tersedia", dot: "bg-mint" },
     dipesan: { label: "Dipesan", dot: "bg-orange" },
@@ -376,7 +375,9 @@ function OwnerControls({ id, status, expired, isEbook }: { id: string; status: s
             </button>
           </form>
         )}
-        {!expired && <DoneChoice id={id} action={setListingStatus} />}
+        {!expired && (
+          <DoneChoice id={id} action={setListingStatus} direct={isEbook ? "thriftbook" : free ? "tidak_dijawab" : undefined} />
+        )}
       </div>
     </section>
   );

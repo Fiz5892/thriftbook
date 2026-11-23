@@ -9,11 +9,27 @@ export function DoneChoice({
   id,
   action,
   compact = false,
+  direct,
 }: {
   id: string;
   action: (formData: FormData) => void | Promise<void>;
   compact?: boolean;
+  /** Tanpa pertanyaan "laku lewat thriftbook?" (buku gratis atau e-book): langsung selesai dengan nilai ini. */
+  direct?: "tidak_dijawab" | "thriftbook";
 }) {
+  if (direct) {
+    return (
+      <form action={action}>
+        <input type="hidden" name="id" value={id} />
+        <input type="hidden" name="status" value="selesai" />
+        <input type="hidden" name="via" value={direct} />
+        <button className={`btn btn-yellow ${compact ? "btn-sm" : ""}`}>
+          <IconCheck className="size-5" />
+          {compact ? "Selesai" : "Tandai selesai"}
+        </button>
+      </form>
+    );
+  }
   const choice = "btn btn-outline btn-sm w-full";
   return (
     <details className="group open:w-full">

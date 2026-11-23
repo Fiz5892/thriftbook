@@ -104,22 +104,13 @@ drop policy if exists orders_read_self on public.ebook_orders;
 create policy orders_read_self on public.ebook_orders for select to authenticated
   using (buyer_id = auth.uid());
 
--- E-book baru SELALU menunggu tinjauan file + hak cipta (alur: "Tim memeriksa file dan hak cipta").
--- Admin menyetujuinya dengan "Tampilkan lagi" di panel moderasi.
-create or replace function public.hold_new_ebook() returns trigger
-language plpgsql security definer set search_path = '' as $$
-begin
-  if new.format = 'ebook' and not (auth.role() = 'service_role' or public.is_admin()) then
-    new.hidden_at := now();
-    new.hidden_reason := 'menunggu_tinjauan_ebook';
-  end if;
-  return new;
-end $$;
+-- E-book langsung tampil saat diposting. Bila ada laporan pelanggaran, admin menurunkannya lewat
+-- panel moderasi ("Sembunyikan"), dan 3 laporan berbeda menyembunyikannya otomatis seperti buku lain.
+-- Bersihkan sisa trigger tinjauan bila versi sebelumnya sudah sempat dijalankan.
 drop trigger if exists listings_hold_ebook on public.listings;
-create trigger listings_hold_ebook before insert on public.listings
-  for each row execute function public.hold_new_ebook();
+drop function if exists public.hold_new_ebook();
 
--- Pemilik tidak boleh mengganti format atau file setelah disetujui (itu melewati tinjauan).
+-- Pemilik tidak boleh mengganti format atau file setelah diposting.
 create or replace function public.protect_listing_columns() returns trigger
 language plpgsql security definer set search_path = '' as $$
 begin
@@ -158,8 +149,8 @@ drop trigger if exists reviews_touch on public.reviews;
 create trigger reviews_touch before update on public.reviews
   for each row execute function public.touch_updated_at();
 
--- Siapa boleh mengulas: bukan pemilik, dan pernah benar-benar berinteraksi
---   fisik  → pernah membuka kontak WhatsApp penjual (contact_reveals)
+-- Siapa boleh mengulas: pengguna aktif yang bukan pemilik.
+--   fisik  → siapa saja (tidak perlu menghubungi WhatsApp dulu)
 --   e-book → sudah checkout (ebook_orders berstatus lunas)
 create or replace function public.can_review_listing(p_listing uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
@@ -173,9 +164,7 @@ language sql stable security definer set search_path = '' as $$
           select 1 from public.ebook_orders o
           where o.listing_id = l.id and o.buyer_id = auth.uid() and o.status = 'lunas'))
         or
-        (l.format = 'fisik' and exists (
-          select 1 from public.contact_reveals c
-          where c.listing_id = l.id and c.viewer_id = auth.uid()))
+        l.format = 'fisik'
       )
   )
 $$;

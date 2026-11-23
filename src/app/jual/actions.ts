@@ -144,7 +144,7 @@ export async function createListing(
   // PDF yang sudah dipakai tidak lagi dianggap yatim oleh cron pembersih
   if (isEbook) await admin.from("ebook_uploads").delete().eq("path", v.ebookPath!);
 
-  // E-book memang berupa PDF dan selalu ditinjau admin, jadi tidak perlu tanda otomatis
+  // E-book memang berupa PDF, jadi kata kunci PDF tidak perlu ditandai otomatis
   if (!isEbook && looksLikePiracy(v.title, v.notes, v.author)) {
     await admin.from("reports").insert({
       reporter_id: null,

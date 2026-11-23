@@ -35,10 +35,10 @@ export default function Syarat() {
           <ul className="list-disc pl-5">
             <li>
               E-book hanya boleh berupa karyamu sendiri, berlisensi terbuka, atau yang kamu punya izin
-              membagikannya. Setiap e-book diperiksa tim (file dan hak cipta) sebelum tampil di katalog.
+              membagikannya. E-book langsung tampil, dan akan diturunkan bila ada laporan pelanggaran hak cipta.
             </li>
             <li>
-              Ulasan hanya untuk pengguna yang pernah menghubungi penjual atau checkout e-book. Tulis jujur
+              Semua pengguna yang login boleh mengulas buku fisik; ulasan e-book hanya untuk yang sudah checkout. Tulis jujur
               dan sopan; ulasan yang melanggar bisa dihapus moderator.
             </li>
           </ul>

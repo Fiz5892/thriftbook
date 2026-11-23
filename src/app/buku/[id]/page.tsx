@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/auth";
-import { CONDITION_LABEL, CONDITION_HELP, type CONDITIONS } from "@/lib/schemas";
+import { CONDITION_LABEL, CONDITION_HELP, OTHER_PROGRAM_SLUG, type CONDITIONS } from "@/lib/schemas";
 import { photoUrl, rupiah, timeAgo } from "@/lib/format";
 import { ConfirmButton } from "@/components/confirm-button";
 import { ReportBox } from "@/components/report-box";
@@ -12,9 +12,16 @@ import { ShareButton } from "@/components/share-button";
 import { ClearDraft } from "@/components/clear-draft";
 import { DoneChoice } from "@/components/done-choice";
 import { IconBookmark, IconEdit, IconRefresh, IconTrash, IconUndo } from "@/components/icons";
-import { setListingStatus, deleteListing } from "./actions";
+import { setListingStatus, deleteListing, checkoutEbook } from "./actions";
+import { Reviews, type ReviewRow } from "./reviews";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const EBOOK_MSG: Record<string, string> = {
+  ok: "Checkout berhasil. E-book-nya bisa kamu baca atau unduh di bawah.",
+  bayar: "E-book berbayar belum bisa dibeli: pembayaran online belum tersedia. Pantau terus, ya.",
+  gagal: "Checkout gagal. Coba lagi sebentar.",
+};
 
 const LAPOR_MSG: Record<string, string> = {
   ok: "Makasih, laporanmu sudah masuk. Tim kami cek maksimal 1×24 jam di hari kuliah.",
@@ -23,13 +30,20 @@ const LAPOR_MSG: Record<string, string> = {
   gagal: "Laporannya gagal terkirim. Coba lagi sebentar.",
 };
 
+/** Nama prodi untuk tampilan: "Lainnya" diganti isian bebas pengguna. */
+function prodiName(l: { study_program_other: string | null; study_programs: unknown }): string | undefined {
+  const sp = l.study_programs as { short_name: string; slug: string } | null;
+  if (!sp) return undefined;
+  return sp.slug === OTHER_PROGRAM_SLUG ? (l.study_program_other ?? sp.short_name) : sp.short_name;
+}
+
 async function load(id: string) {
   if (!UUID.test(id)) return null;
   const supabase = await createClient();
   const { data: l } = await supabase
     .from("listings")
     .select(
-      "id, owner_id, title, author, price, offer_type, swap_wish, notes, condition, semester, status, hidden_at, hidden_reason, course_id, created_at, courses:course_id(name), study_programs(short_name), listing_photos(path_full, position, width, height)",
+      "id, owner_id, title, author, price, offer_type, swap_wish, notes, condition, semester, status, hidden_at, hidden_reason, course_id, created_at, format, study_program_other, ebook_bytes, courses:course_id(name), study_programs(short_name, slug), listing_photos(path_full, position, width, height)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -50,10 +64,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
   const harga =
     d.l.offer_type === "jual" && d.l.price ? rupiah(d.l.price) : d.l.offer_type === "hibah" ? "Gratis" : "Tukar";
-  const cond = CONDITION_LABEL[d.l.condition as (typeof CONDITIONS)[number]];
-  const prodi = (d.l.study_programs as unknown as { short_name: string } | null)?.short_name ?? "";
+  const cond = d.l.format === "ebook"
+    ? "E-book PDF"
+    : `Kondisi ${CONDITION_LABEL[d.l.condition as (typeof CONDITIONS)[number]]}`;
+  const prodi = prodiName(d.l);
   const title = `${d.l.title} — ${harga} · thriftbook.`;
-  const description = `${harga} · Kondisi ${cond}${prodi ? ` · ${prodi}` : ""}`;
+  const description = `${harga} · ${cond}${prodi ? ` · ${prodi}` : ""}`;
   const cover = [...(d.l.listing_photos as { path_full: string; position: number }[])]
     .sort((a, b) => a.position - b.position)[0];
   return {
@@ -70,20 +86,22 @@ export default async function BukuPage({
   params, searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ baru?: string; lapor?: string }>;
+  searchParams: Promise<{ baru?: string; lapor?: string; ebook?: string }>;
 }) {
   const { id } = await params;
-  const { baru, lapor } = await searchParams;
+  const { baru, lapor, ebook: ebookMsg } = await searchParams;
   const d = await load(id);
   if (!d) notFound();
   const { supabase, l, owner, userId } = d;
 
   const isOwner = userId === l.owner_id;
-  const cond = l.condition as (typeof CONDITIONS)[number];
+  const isEbook = l.format === "ebook";
+  const cond = l.condition as (typeof CONDITIONS)[number] | null;
+  const pendingReview = l.hidden_reason === "menunggu_tinjauan_ebook";
   const photos = [...(l.listing_photos as { path_full: string; position: number; width: number; height: number }[])]
     .sort((a, b) => a.position - b.position);
   const course = (l.courses as unknown as { name: string } | null)?.name;
-  const prodi = (l.study_programs as unknown as { short_name: string } | null)?.short_name;
+  const prodi = prodiName(l);
   const meta = [course, prodi, l.semester ? `Semester ${l.semester}` : null].filter(Boolean).join(" · ");
   const sold = l.status === "selesai";
   const reserved = l.status === "dipesan";
@@ -100,12 +118,33 @@ export default async function BukuPage({
     seekers = data ?? [];
   }
 
+  // Hak baca e-book + ulasan. RLS: pembeli hanya melihat ordernya sendiri; ulasan terbaca publik.
+  const { data: order } = isEbook && userId
+    ? await supabase.from("ebook_orders").select("status").eq("listing_id", l.id).eq("status", "lunas").maybeSingle()
+    : { data: null };
+  const hasAccess = isEbook && (isOwner || !!order);
+  const [{ data: reviewRows }, canReviewRes] = await Promise.all([
+    supabase.from("reviews").select("id, reviewer_id, rating, comment, created_at")
+      .eq("listing_id", l.id).order("created_at", { ascending: false }).limit(100),
+    userId && !isOwner ? supabase.rpc("can_review_listing", { p_listing: l.id }) : Promise.resolve({ data: false }),
+  ]);
+  const reviews = (reviewRows ?? []) as ReviewRow[];
+  const reviewerIds = [...new Set(reviews.map((r) => r.reviewer_id))];
+  const { data: reviewers } = reviewerIds.length
+    ? await supabase.from("public_profiles").select("id, display_name").in("id", reviewerIds)
+    : { data: [] as { id: string; display_name: string }[] };
+  const names = Object.fromEntries((reviewers ?? []).map((r) => [r.id, r.display_name]));
+
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:py-10">
       {baru && isOwner && <ClearDraft />}
       {baru && isOwner && (
         <div role="status" className="notice mb-4">
-          <p className="font-semibold">Bukumu sudah tayang. Jangan lupa tandai &lsquo;Selesai&rsquo; kalau sudah laku.</p>
+          <p className="font-semibold">
+            {pendingReview
+              ? "E-bookmu sudah terkirim. Tim kami memeriksa file dan hak ciptanya dulu; setelah disetujui, e-book tampil di katalog."
+              : "Bukumu sudah tayang. Jangan lupa tandai ‘Selesai’ kalau sudah laku."}
+          </p>
           {seekers.length > 0 && (
             <div className="mt-2 text-sm">
               <p>Ada {seekers.length === 3 ? "beberapa" : seekers.length} orang yang mencari buku mirip:</p>
@@ -121,10 +160,14 @@ export default async function BukuPage({
       {lapor && LAPOR_MSG[lapor] && (
         <p role="status" className="card mb-4 px-4 py-3">{LAPOR_MSG[lapor]}</p>
       )}
+      {ebookMsg && EBOOK_MSG[ebookMsg] && (
+        <p role="status" className="card mb-4 px-4 py-3">{EBOOK_MSG[ebookMsg]}</p>
+      )}
       {isOwner && l.hidden_at && (
         <p role="status" className="alert-danger mb-4">
-          Listing ini disembunyikan moderator
-          {l.hidden_reason === "auto_3_reports" ? " sementara menunggu tinjauan." : "."}
+          {pendingReview
+            ? "E-book ini sedang diperiksa tim (file dan hak cipta). Belum tampil di katalog."
+            : `Listing ini disembunyikan moderator${l.hidden_reason === "auto_3_reports" ? " sementara menunggu tinjauan." : "."}`}
         </p>
       )}
 
@@ -158,9 +201,13 @@ export default async function BukuPage({
       )}
 
       <p className="badge mt-3 inline-block text-sm">
-        {CONDITION_LABEL[cond]}
+        {isEbook ? "E-book PDF" : CONDITION_LABEL[cond!]}
       </p>
-      <p className="mt-1 text-sm text-muted">{CONDITION_HELP[cond]}</p>
+      <p className="mt-1 text-sm text-muted">
+        {isEbook
+          ? `File PDF${l.ebook_bytes ? ` · ${(l.ebook_bytes / 1024 / 1024).toFixed(1)} MB` : ""}. Didapat lewat checkout di sini, tanpa WhatsApp.`
+          : CONDITION_HELP[cond!]}
+      </p>
       <p className="mt-3 text-sm text-muted">{meta}</p>
 
       {l.notes && <p className="mt-4 whitespace-pre-wrap">{l.notes}</p>}
@@ -175,7 +222,9 @@ export default async function BukuPage({
         {sold ? (
           <p className="card px-4 py-3 text-muted">Buku ini sudah tidak tersedia.</p>
         ) : isOwner ? (
-          <OwnerControls id={l.id} status={l.status} expired={expired} />
+          <OwnerControls id={l.id} status={l.status} expired={expired} isEbook={isEbook} />
+        ) : isEbook ? (
+          <EbookBox id={l.id} price={l.price} hasAccess={hasAccess} loggedIn={!!userId} />
         ) : reserved ? (
           <p className="card px-4 py-3 text-muted">Sedang dipesan orang lain.</p>
         ) : userId ? (
@@ -190,7 +239,13 @@ export default async function BukuPage({
         )}
       </div>
 
-      {!sold && !isOwner && (
+      {isOwner && isEbook && !sold && (
+        <a href={`/api/ebooks/${l.id}/file`} target="_blank" rel="noopener" className="btn btn-outline mt-3 w-full">
+          Buka file PDF
+        </a>
+      )}
+
+      {!sold && !isOwner && !isEbook && (
         <aside className="card mt-6 p-4 text-sm">
           <h2 className="font-semibold">Tips COD aman</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -212,11 +267,51 @@ export default async function BukuPage({
       {userId && !isOwner && <ReportBox kind="listing" targetId={l.id} />}
       </div>
       </div>
+
+      <Reviews
+        listingId={l.id} reviews={reviews} names={names} userId={userId} isOwner={isOwner}
+        canReview={canReviewRes.data === true}
+        hint={isEbook
+          ? "Checkout e-book ini dulu untuk memberi ulasan."
+          : "Kamu bisa mengulas setelah menghubungi penjual lewat WhatsApp."}
+      />
     </main>
   );
 }
 
-function OwnerControls({ id, status, expired }: { id: string; status: string; expired: boolean }) {
+/** Aksi pembeli e-book: checkout (tanpa WhatsApp), lalu baca atau unduh. */
+function EbookBox({ id, price, hasAccess, loggedIn }: {
+  id: string; price: number | null; hasAccess: boolean; loggedIn: boolean;
+}) {
+  if (hasAccess) {
+    return (
+      <div className="card flex flex-col gap-2 p-4">
+        <p className="font-semibold">E-book ini sudah bisa kamu akses.</p>
+        <div className="flex flex-wrap gap-2">
+          <a href={`/api/ebooks/${id}/file`} target="_blank" rel="noopener" className="btn btn-yellow">Baca</a>
+          <a href={`/api/ebooks/${id}/file?unduh=1`} className="btn btn-outline">Unduh</a>
+        </div>
+      </div>
+    );
+  }
+  if (!loggedIn) {
+    return (
+      <Link href={`/masuk?next=${encodeURIComponent(`/buku/${id}`)}`} className="btn btn-yellow w-full">
+        Masuk untuk checkout e-book
+      </Link>
+    );
+  }
+  return (
+    <form action={checkoutEbook}>
+      <input type="hidden" name="id" value={id} />
+      <button className="btn btn-yellow w-full">
+        {price === null ? "Checkout e-book gratis" : `Checkout e-book · ${rupiah(price)}`}
+      </button>
+    </form>
+  );
+}
+
+function OwnerControls({ id, status, expired, isEbook }: { id: string; status: string; expired: boolean; isEbook: boolean }) {
   const STATUS: Record<string, { label: string; dot: string }> = {
     aktif: { label: "Tersedia", dot: "bg-mint" },
     dipesan: { label: "Dipesan", dot: "bg-orange" },
@@ -261,7 +356,7 @@ function OwnerControls({ id, status, expired }: { id: string; status: string; ex
             </button>
           </form>
         )}
-        {status === "aktif" && (
+        {status === "aktif" && !isEbook && (
           <form action={setListingStatus}>
             <input type="hidden" name="id" value={id} />
             <input type="hidden" name="status" value="dipesan" />

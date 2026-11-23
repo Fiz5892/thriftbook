@@ -2,19 +2,20 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updateListing, type EditState } from "./actions";
-import { CONDITIONS, CONDITION_LABEL, CONDITION_HELP, OFFER_TYPES, OFFER_LABEL } from "@/lib/schemas";
+import { CONDITIONS, CONDITION_LABEL, CONDITION_HELP, OFFER_TYPES, OFFER_LABEL, OTHER_PROGRAM_SLUG } from "@/lib/schemas";
 
 const input = "input";
 const FIELD_LABEL: Record<string, string> = {
-  title: "Judul buku", course: "Mata kuliah", studyProgramId: "Prodi", condition: "Kondisi",
+  title: "Judul buku", studyProgramOther: "Nama prodi", course: "Mata kuliah", studyProgramId: "Prodi", condition: "Kondisi",
   offerType: "Mau diapakan", price: "Harga", swapWish: "Ingin ditukar dengan",
 };
 
 export function EditForm({
-  id, programs, initial,
+  id, programs, initial, isEbook = false,
 }: {
   id: string;
-  programs: { id: number; short_name: string }[];
+  programs: { id: number; slug: string; short_name: string }[];
+  isEbook?: boolean;
   initial: Record<string, string>;
 }) {
   const [state, action, pending] = useActionState<EditState, FormData>(updateListing, {});
@@ -22,6 +23,9 @@ export function EditForm({
   const v = { ...initial, ...(state.values ?? {}) };
   const [condition, setCondition] = useState(initial.condition);
   const [offer, setOffer] = useState(initial.offerType);
+  const [progId, setProgId] = useState(v.studyProgramId);
+  const isOther = programs.find((p) => String(p.id) === progId)?.slug === OTHER_PROGRAM_SLUG;
+  const offerTypes = isEbook ? OFFER_TYPES.filter((t) => t !== "tukar") : OFFER_TYPES;
   const [seen, setSeen] = useState(state);
   if (seen !== state) {
     setSeen(state);
@@ -56,7 +60,8 @@ export function EditForm({
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1">
           <span className="font-semibold">Prodi</span>
-          <select name="studyProgramId" defaultValue={v.studyProgramId} className={input}>
+          <select name="studyProgramId" defaultValue={v.studyProgramId} className={input}
+            onChange={(e) => setProgId(e.target.value)}>
             {programs.map((p) => <option key={p.id} value={p.id}>{p.short_name}</option>)}
           </select>
         </label>
@@ -69,6 +74,15 @@ export function EditForm({
         </label>
       </div>
 
+      {isOther && (
+        <label className="flex flex-col gap-1">
+          <span className="font-semibold">Nama prodimu</span>
+          <input name="studyProgramOther" defaultValue={v.studyProgramOther} maxLength={60} className={input} />
+          {fe.studyProgramOther && <span role="alert" className="text-sm text-danger">{fe.studyProgramOther}</span>}
+        </label>
+      )}
+
+      {!isEbook && (
       <fieldset>
         <legend className="font-semibold">Kondisi</legend>
         <div className="mt-2 flex flex-col gap-2">
@@ -84,15 +98,16 @@ export function EditForm({
           ))}
         </div>
       </fieldset>
+      )}
 
       <fieldset>
         <legend className="font-semibold">Mau diapakan?</legend>
         <div className="mt-2 flex gap-2">
-          {OFFER_TYPES.map((t) => (
+          {offerTypes.map((t) => (
             <label key={t} className="option min-h-11 flex-1 items-center justify-center text-center text-sm font-semibold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-navy-600">
               <input type="radio" name="offerType" value={t} checked={offer === t}
                 onChange={() => setOffer(t)} className="sr-only" />
-              {OFFER_LABEL[t]}
+              {isEbook && t === "hibah" ? "Gratis" : OFFER_LABEL[t]}
             </label>
           ))}
         </div>

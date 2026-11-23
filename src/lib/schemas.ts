@@ -3,6 +3,16 @@ import { normalizeWhatsapp } from "./whatsapp.ts";
 
 export const CONDITIONS = ["seperti_baru", "baik", "layak", "banyak_coretan"] as const;
 export const OFFER_TYPES = ["jual", "hibah", "tukar"] as const;
+export const BOOK_FORMATS = ["fisik", "ebook"] as const;
+
+export const FORMAT_LABEL: Record<(typeof BOOK_FORMATS)[number], string> = {
+  fisik: "Buku fisik",
+  ebook: "E-book (PDF)",
+};
+
+/** Slug prodi "Lainnya": pengguna mengisi nama prodinya sendiri. */
+export const OTHER_PROGRAM_SLUG = "lainnya";
+export const MAX_EBOOK_BYTES = 20 * 1024 * 1024;
 
 export const CONDITION_LABEL: Record<(typeof CONDITIONS)[number], string> = {
   seperti_baru: "Seperti baru",
@@ -73,17 +83,29 @@ export const listingSchema = z
     title: z.string().trim().min(3, "Judul minimal 3 karakter").max(120),
     author: optionalText(80),
     course: z.string().trim().min(2, "Isi mata kuliah").max(80),
+    format: z.enum(BOOK_FORMATS).default("fisik"),
     studyProgramId: z.coerce.number().int().positive("Pilih prodi"),
+    studyProgramOther: optionalText(60),
     semester: optionalInt(z.coerce.number().int().min(1).max(8), "Semester harus 1–8"),
-    condition: z.enum(CONDITIONS, { error: "Pilih kondisi buku" }),
+    condition: z.enum(CONDITIONS, { error: "Pilih kondisi buku" }).optional(),
     offerType: z.enum(OFFER_TYPES, { error: "Pilih jual, hibah, atau tukar" }),
     price: optionalInt(z.coerce.number().int(), "Harga harus berupa angka bulat, mis. 45000"),
     swapWish: optionalText(200),
     notes: optionalText(500),
     authenticity: z.literal("on", { error: "Centang pernyataan keaslian buku." }),
-    photoIds: z.array(z.string().uuid()).min(1, "Minimal 1 foto").max(3, "Maksimal 3 foto"),
+    ebookPath: optionalText(200),
+    photoIds: z.array(z.string().uuid()).max(3, "Maksimal 3 foto"),
   })
   .superRefine((v, ctx) => {
+    if (v.format === "fisik") {
+      if (!v.condition) ctx.addIssue({ code: "custom", path: ["condition"], message: "Pilih kondisi buku" });
+      if (v.photoIds.length < 1) ctx.addIssue({ code: "custom", path: ["photoIds"], message: "Minimal 1 foto" });
+    } else {
+      if (!v.ebookPath) ctx.addIssue({ code: "custom", path: ["ebookPath"], message: "Unggah file PDF-nya dulu" });
+      if (v.offerType === "tukar") {
+        ctx.addIssue({ code: "custom", path: ["offerType"], message: "E-book hanya bisa dijual atau digratiskan" });
+      }
+    }
     if (v.offerType === "jual") {
       if (v.price === null) {
         ctx.addIssue({ code: "custom", path: ["price"], message: "Isi harga" });
@@ -123,6 +145,23 @@ export const REPORT_LABEL: Record<(typeof REPORT_REASONS)[number], string> = {
   tidak_pantas: "Konten tidak pantas",
   lainnya: "Lainnya",
 };
+
+/** Nama prodi isian bebas wajib bila prodi yang dipilih adalah "Lainnya". */
+export function programOtherError(isOther: boolean, text: string | null): string | null {
+  if (!isOther) return null;
+  return text && text.trim().length >= 2 ? null : "Tulis nama prodimu (minimal 2 karakter)";
+}
+
+export const reviewSchema = z.object({
+  listingId: z.string().uuid(),
+  rating: z.coerce.number().int().min(1, "Pilih bintang 1–5").max(5, "Pilih bintang 1–5"),
+  comment: z
+    .string()
+    .trim()
+    .max(500, "Ulasan maksimal 500 karakter")
+    .transform((v) => (v === "" ? null : v))
+    .refine((v) => v === null || v.length >= 3, "Ulasan minimal 3 karakter"),
+});
 
 export const requestSchema = z.object({
   title: z.string().trim().min(3, "Judul atau topik minimal 3 karakter").max(120),

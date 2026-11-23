@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emailHash } from "@/lib/hash";
+import { EBOOK_BUCKET } from "@/lib/ebook";
 
 export type DeleteState = { error?: string };
 
@@ -29,6 +30,10 @@ export async function deleteMyAccount(_prev: DeleteState, form: FormData): Promi
 
   const { data: photos } = await admin
     .from("listing_photos").select("path_full, path_thumb").eq("owner_id", user.id);
+  const [{ data: ebooks }, { data: pendingPdf }] = await Promise.all([
+    admin.from("listings").select("ebook_path").eq("owner_id", user.id).not("ebook_path", "is", null),
+    admin.from("ebook_uploads").select("path").eq("owner_id", user.id),
+  ]);
   const { data: profile } = await admin
     .from("profiles").select("role, banned_at").eq("id", user.id).maybeSingle();
 
@@ -48,6 +53,9 @@ export async function deleteMyAccount(_prev: DeleteState, form: FormData): Promi
     await admin.storage.from("listing-photos")
       .remove(photos.flatMap((p) => [p.path_full, p.path_thumb]));
   }
+
+  const pdfPaths = [...(ebooks ?? []).map((e) => e.ebook_path as string), ...(pendingPdf ?? []).map((e) => e.path)];
+  if (pdfPaths.length) await admin.storage.from(EBOOK_BUCKET).remove(pdfPaths);
 
   await supabase.auth.signOut().catch(() => {});
   revalidateTag(TAG.listings, { expire: 0 });

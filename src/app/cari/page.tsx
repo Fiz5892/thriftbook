@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { after } from "next/server";
 import { BookCard, CARD_SELECT, type CardListing } from "@/components/book-card";
 import {
-  CONDITIONS, CONDITION_LABEL, OFFER_TYPES, OFFER_LABEL, escapeLike,
+  CONDITIONS, CONDITION_LABEL, OFFER_TYPES, OFFER_LABEL, BOOK_FORMATS, FORMAT_LABEL, escapeLike,
 } from "@/lib/schemas";
 import { fuzzyScore, rankFuzzy } from "@/lib/fuzzy";
 import { Mascot } from "@/components/mascot";
@@ -15,7 +15,7 @@ const HARGA_PILIHAN = [20000, 30000, 50000, 100000];
 
 type SP = {
   q?: string; prodi?: string; semester?: string; kondisi?: string;
-  tipe?: string; harga_maks?: string; urut?: string; cursor?: string; dipesan?: string;
+  tipe?: string; format?: string; harga_maks?: string; urut?: string; cursor?: string; dipesan?: string;
 };
 
 type Row = CardListing & { search_text?: string };
@@ -32,6 +32,7 @@ export default async function CariPage({ searchParams }: { searchParams: Promise
   const sem = Number(sp.semester);
   const semOk = Number.isInteger(sem) && sem >= 1 && sem <= 8;
   const kondisi = (CONDITIONS as readonly string[]).includes(sp.kondisi ?? "") ? sp.kondisi : undefined;
+  const format = (BOOK_FORMATS as readonly string[]).includes(sp.format ?? "") ? sp.format : undefined;
   const tipe = (OFFER_TYPES as readonly string[]).includes(sp.tipe ?? "") ? sp.tipe : undefined;
   const maks = Number(sp.harga_maks);
   const maksOk = Number.isInteger(maks) && maks > 0;
@@ -45,6 +46,7 @@ export default async function CariPage({ searchParams }: { searchParams: Promise
     qb = qb.in("status", statuses).is("hidden_at", null);
     if (prodi) qb = qb.eq("study_program_id", prodi.id);
     if (semOk) qb = qb.eq("semester", sem);
+    if (format) qb = qb.eq("format", format);
     if (kondisi) qb = qb.eq("condition", kondisi);
     if (tipe) qb = qb.eq("offer_type", tipe);
     if (maksOk && !tipe) qb = qb.or(`price.lte.${maks},offer_type.eq.hibah`); // AC-09.4
@@ -160,6 +162,11 @@ export default async function CariPage({ searchParams }: { searchParams: Promise
       )}
 
       <div className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 text-sm md:mx-0 md:flex-wrap md:overflow-visible md:px-0" aria-label="Filter tipe, kondisi, dan urutan">
+        {BOOK_FORMATS.map((f) => (
+          <Chip key={f} href={keep({ format: format === f ? undefined : f, cursor: undefined })} active={format === f}>
+            {FORMAT_LABEL[f]}
+          </Chip>
+        ))}
         {OFFER_TYPES.map((t) => (
           <Chip key={t} href={keep({ tipe: tipe === t ? undefined : t, cursor: undefined })} active={tipe === t}>
             {OFFER_LABEL[t]}

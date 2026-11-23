@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CONDITION_LABEL, type CONDITIONS } from "@/lib/schemas";
+import { CONDITION_LABEL, OTHER_PROGRAM_SLUG, type CONDITIONS } from "@/lib/schemas";
 import { photoUrl, rupiah, timeAgo } from "@/lib/format";
 
 export type CardListing = {
@@ -7,16 +7,18 @@ export type CardListing = {
   title: string;
   price: number | null;
   offer_type: "jual" | "hibah" | "tukar";
-  condition: (typeof CONDITIONS)[number];
+  condition: (typeof CONDITIONS)[number] | null;
+  format: "fisik" | "ebook";
+  study_program_other: string | null;
   semester: number | null;
   status: string;
   created_at: string;
-  study_programs: { short_name: string } | null;
+  study_programs: { short_name: string; slug: string } | null;
   listing_photos: { path_thumb: string; position: number }[];
 };
 
 export const CARD_SELECT =
-  "id, title, price, offer_type, condition, semester, status, created_at, study_programs(short_name), listing_photos(path_thumb, position)";
+  "id, title, price, offer_type, condition, format, study_program_other, semester, status, created_at, study_programs(short_name, slug), listing_photos(path_thumb, position)";
 
 // Latar sampul pengganti (saat foto belum ada/termuat), dipilih stabil dari judul
 const COVER_BG = ["bg-pink", "bg-mint", "bg-lilac", "bg-orange", "bg-yellow-400"];
@@ -32,7 +34,10 @@ function coverBg(title: string) {
  */
 export function BookCard({ b, priority = false }: { b: CardListing; priority?: boolean }) {
   const cover = [...b.listing_photos].sort((x, y) => x.position - y.position)[0];
-  const meta = [b.study_programs?.short_name, b.semester ? `Sem ${b.semester}` : null]
+  const prodi = b.study_programs?.slug === OTHER_PROGRAM_SLUG
+    ? (b.study_program_other ?? b.study_programs.short_name)
+    : b.study_programs?.short_name;
+  const meta = [prodi, b.semester ? `Sem ${b.semester}` : null]
     .filter(Boolean)
     .join(" · ");
 
@@ -56,7 +61,7 @@ export function BookCard({ b, priority = false }: { b: CardListing; priority?: b
             className="relative size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         )}
-        <span className="badge absolute left-2 top-2">{CONDITION_LABEL[b.condition]}</span>
+        <span className="badge absolute left-2 top-2">{b.format === "ebook" ? "E-book PDF" : b.condition ? CONDITION_LABEL[b.condition] : ""}</span>
       </div>
       <div className="flex flex-1 flex-col gap-1 p-3">
         <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{b.title}</h3>

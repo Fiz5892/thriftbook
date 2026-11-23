@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidateTag } from "next/cache";
 import { TAG } from "@/lib/public-data";
+import { EBOOK_BUCKET } from "@/lib/ebook";
 
 const DAY = 86400_000;
 const BUCKET = "listing-photos";
@@ -56,6 +57,15 @@ export async function GET(request: NextRequest) {
     await db.from("listing_photos").delete().in("id", orphans.data.map((p) => p.id));
   }
   result.foto_yatim_dihapus = orphans.data?.length ?? 0;
+
+  // 4b. PDF yatim: diunggah tapi tak pernah dipakai listing > 2 jam
+  const pdfOrphans = await db.from("ebook_uploads").select("path").lt("created_at", iso(2 * 3600_000)).limit(500);
+  if (pdfOrphans.data?.length) {
+    const paths = pdfOrphans.data.map((p) => p.path);
+    await db.storage.from(EBOOK_BUCKET).remove(paths);
+    await db.from("ebook_uploads").delete().in("path", paths);
+  }
+  result.pdf_yatim_dihapus = pdfOrphans.data?.length ?? 0;
 
   // 5. Listing selesai > 30 hari: buang foto penuh, sisakan thumbnail (D-10)
   const done = await db.from("listings").select("id").eq("status", "selesai").lt("updated_at", iso(30 * DAY)).limit(500);

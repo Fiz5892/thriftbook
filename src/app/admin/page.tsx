@@ -228,16 +228,31 @@ export default async function AdminPage() {
         })}
       </ul>
 
-      <h2 className="mt-10 text-lg font-semibold">Disembunyikan</h2>
+      <h2 className="mt-10 text-lg font-semibold">Disembunyikan dan e-book menunggu tinjauan</h2>
       {!(hiddenListings?.length || hiddenRequests?.length) && <p className="mt-2 text-muted">Tidak ada.</p>}
       <ul className="mt-3 flex flex-col gap-3">
-        {hiddenListings?.map((l) => (
-          <li key={l.id} className="card p-4">
-            <p className="font-semibold"><Link href={`/buku/${l.id}`} className="underline">{l.title}</Link></p>
-            <p className="text-sm text-muted">Listing · {l.hidden_reason}</p>
-            <ModerateForm kind="listing" targetId={l.id} buttons={[{ intent: "unhide", label: "Tampilkan lagi" }]} />
-          </li>
-        ))}
+        {hiddenListings?.map((l) => {
+          const pending = l.hidden_reason === "menunggu_tinjauan_ebook";
+          return (
+            <li key={l.id} className="card p-4">
+              <p className="font-semibold"><Link href={`/buku/${l.id}`} className="underline">{l.title}</Link></p>
+              <p className="text-sm text-muted">
+                {pending ? "E-book menunggu tinjauan file dan hak cipta" : `Listing · ${l.hidden_reason}`}
+              </p>
+              {pending && (
+                <a href={`/api/ebooks/${l.id}/file`} target="_blank" rel="noopener" className="btn-link text-sm">
+                  Buka PDF untuk diperiksa
+                </a>
+              )}
+              <ModerateForm
+                kind="listing" targetId={l.id}
+                buttons={pending
+                  ? [{ intent: "unhide", label: "Setujui & tampilkan" }, { intent: "hide", label: "Tolak", danger: true }]
+                  : [{ intent: "unhide", label: "Tampilkan lagi" }]}
+              />
+            </li>
+          );
+        })}
         {hiddenRequests?.map((r) => (
           <li key={r.id} className="card p-4">
             <p className="font-semibold"><Link href={`/dicari/${r.id}`} className="underline">{r.title}</Link></p>

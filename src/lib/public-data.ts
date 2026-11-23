@@ -1,6 +1,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
+import { OTHER_PROGRAM_SLUG } from "@/lib/schemas";
 import { CARD_SELECT, type CardListing } from "@/components/book-card";
 
 /*
@@ -32,9 +33,12 @@ export const getPrograms = unstable_cache(
     const { data, error } = await anon()
       .from("study_programs").select("id, slug, short_name").eq("is_active", true).order("short_name");
     if (error) throw error; // jangan cache kegagalan
-    return data ?? [];
+    // "Lainnya" selalu di urutan terakhir
+    return (data ?? []).sort(
+      (a, b) => Number(a.slug === OTHER_PROGRAM_SLUG) - Number(b.slug === OTHER_PROGRAM_SLUG),
+    );
   },
-  ["programs-v1"],
+  ["programs-v2"],
   { revalidate: 3600, tags: [TAG.programs] },
 );
 

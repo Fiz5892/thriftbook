@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { requireCompleteUser } from "@/lib/session";
-import { listingSchema } from "@/lib/schemas";
+import { listingSchema, programOtherError, OTHER_PROGRAM_SLUG } from "@/lib/schemas";
 import { resolveCourse } from "@/lib/courses";
 import { looksLikePiracy } from "@/lib/piracy";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -17,7 +17,7 @@ export type EditState = {
 };
 
 const KEYS = [
-  "title", "author", "course", "studyProgramId", "semester", "condition",
+  "title", "author", "course", "studyProgramId", "studyProgramOther", "semester", "condition",
   "offerType", "price", "swapWish", "notes",
 ] as const;
 
@@ -37,10 +37,18 @@ export async function updateListing(_prev: EditState, form: FormData): Promise<E
     if (typeof v === "string") values[k] = v;
   }
 
+  // Format dan file tidak bisa diubah di sini: ambil dari database, bukan dari form
+  const { data: current } = await supabase
+    .from("listings").select("format, ebook_path").eq("id", id.data).eq("owner_id", user.id).maybeSingle();
+  if (!current) return { error: "Listing tidak ditemukan.", values };
+  const isEbook = current.format === "ebook";
+
   const parsed = listingSchema.safeParse({
     ...Object.fromEntries(form),
+    format: current.format,
+    ebookPath: current.ebook_path ?? undefined,
     authenticity: "on", // sudah dinyatakan saat posting (AC-04.8); kolom DB tetap true
-    photoIds: [DUMMY_PHOTO],
+    photoIds: isEbook ? [] : [DUMMY_PHOTO],
   });
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
@@ -53,6 +61,13 @@ export async function updateListing(_prev: EditState, form: FormData): Promise<E
   if (!parsed.success) return { error: "Datanya belum valid.", values };
   const v = parsed.data;
 
+  const { data: prog } = await supabase
+    .from("study_programs").select("slug").eq("id", v.studyProgramId).maybeSingle();
+  if (!prog) return { fieldErrors: { studyProgramId: "Prodi tidak valid" }, values };
+  const isOther = prog.slug === OTHER_PROGRAM_SLUG;
+  const otherErr = programOtherError(isOther, v.studyProgramOther);
+  if (otherErr) return { fieldErrors: { studyProgramOther: otherErr }, values };
+
   const courseId = await resolveCourse(supabase, user.id, v.course);
   if (courseId === null) return { error: "Mata kuliah gagal disimpan. Coba lagi sebentar.", values };
 
@@ -61,8 +76,9 @@ export async function updateListing(_prev: EditState, form: FormData): Promise<E
     author: v.author,
     course_id: courseId,
     study_program_id: v.studyProgramId,
+    study_program_other: isOther ? v.studyProgramOther : null,
     semester: v.semester,
-    condition: v.condition,
+    condition: isEbook ? null : v.condition,
     offer_type: v.offerType,
     price: v.offerType === "jual" ? v.price : null,
     swap_wish: v.offerType === "tukar" ? v.swapWish : null,
@@ -73,7 +89,7 @@ export async function updateListing(_prev: EditState, form: FormData): Promise<E
     return { error: "Perubahannya gagal disimpan. Listing mungkin sudah disembunyikan atau dihapus.", values };
   }
 
-  if (looksLikePiracy(v.title, v.notes, v.author)) {
+  if (!isEbook && looksLikePiracy(v.title, v.notes, v.author)) {
     await createAdminClient().from("reports").insert({
       reporter_id: null, target_listing_id: id.data, reason: "bajakan",
       note: "otomatis: kata kunci fotokopi/PDF terdeteksi (setelah edit)",

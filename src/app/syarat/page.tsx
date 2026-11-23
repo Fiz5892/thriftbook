@@ -24,10 +24,23 @@ export default function Syarat() {
         <section>
           <h2 className="font-semibold">Yang dilarang</h2>
           <ul className="list-disc pl-5">
-            <li>Menjual fotokopi, cetak ulang, atau file digital (PDF/e-book) buku ber-hak cipta.</li>
+            <li>Menjual fotokopi atau cetak ulang, atau mengunggah file digital (PDF/e-book) buku ber-hak cipta tanpa izin pemegang haknya.</li>
             <li>Kunci jawaban ujian dan barang selain buku atau modul kuliah.</li>
             <li>Meminta transfer atau DP sebelum buku diserahkan, listing palsu, atau foto curian.</li>
             <li>Memakai nomor WhatsApp milik orang lain, spam, atau mengumpulkan nomor pengguna.</li>
+          </ul>
+        </section>
+        <section>
+          <h2 className="font-semibold">E-book dan ulasan</h2>
+          <ul className="list-disc pl-5">
+            <li>
+              E-book hanya boleh berupa karyamu sendiri, berlisensi terbuka, atau yang kamu punya izin
+              membagikannya. Setiap e-book diperiksa tim (file dan hak cipta) sebelum tampil di katalog.
+            </li>
+            <li>
+              Ulasan hanya untuk pengguna yang pernah menghubungi penjual atau checkout e-book. Tulis jujur
+              dan sopan; ulasan yang melanggar bisa dihapus moderator.
+            </li>
           </ul>
         </section>
         <section>

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { looksLikePiracy } from "../src/lib/piracy.ts";
 import {
   escapeLike, normalizeCourseName, listingSchema, requestSchema, onboardingSchema,
+  programOtherError, reviewSchema,
 } from "../src/lib/schemas.ts";
 
 const PHOTO = "7d32b57d-a70b-4567-a0ca-3cc13b2a3094";
@@ -112,4 +113,44 @@ test("hibah dengan harga terkirim: harga dibuang, bukan ditolak", () => {
   // tapi nilai lama bisa ikut terkirim. Server harus tetap menyimpan price = null.
   const r = listingSchema.safeParse({ ...baseListing, offerType: "hibah", price: "45000" });
   assert.equal(r.success, true);
+});
+
+const EBOOK = {
+  ...baseListing, format: "ebook", condition: undefined, photoIds: [],
+  ebookPath: "7d32b57d-a70b-4567-a0ca-3cc13b2a3094/7d32b57d-a70b-4567-a0ca-3cc13b2a3095.pdf",
+};
+
+test("e-book: tanpa kondisi dan tanpa foto, wajib ada PDF, tidak bisa ditukar", () => {
+  assert.equal(listingSchema.safeParse(EBOOK).success, true);
+  assert.equal(listingSchema.safeParse({ ...EBOOK, offerType: "hibah", price: "" }).success, true, "gratis");
+  assert.equal(listingSchema.safeParse({ ...EBOOK, ebookPath: "" }).success, false, "tanpa PDF");
+  assert.equal(
+    listingSchema.safeParse({ ...EBOOK, offerType: "tukar", price: "", swapWish: "Kalkulus 1" }).success,
+    false, "e-book tidak bisa ditukar",
+  );
+});
+
+test("buku fisik tetap wajib kondisi dan minimal 1 foto setelah ada format e-book", () => {
+  assert.equal(listingSchema.safeParse({ ...baseListing, condition: undefined }).success, false);
+  assert.equal(listingSchema.safeParse({ ...baseListing, format: "fisik", photoIds: [] }).success, false);
+  assert.equal(listingSchema.safeParse({ ...baseListing, format: "pdf" }).success, false, "format liar");
+});
+
+test("prodi Lainnya: nama prodi isian bebas wajib diisi", () => {
+  assert.equal(programOtherError(false, null), null);
+  assert.equal(programOtherError(true, null) !== null, true);
+  assert.equal(programOtherError(true, " a ") !== null, true);
+  assert.equal(programOtherError(true, "Pendidikan Sejarah"), null);
+});
+
+test("ulasan: rating 1–5 wajib, komentar opsional minimal 3 karakter", () => {
+  const id = "7d32b57d-a70b-4567-a0ca-3cc13b2a3094";
+  assert.equal(reviewSchema.safeParse({ listingId: id, rating: "5", comment: "" }).success, true);
+  assert.equal(reviewSchema.safeParse({ listingId: id, rating: "4", comment: "Bukunya bagus" }).success, true);
+  assert.equal(reviewSchema.safeParse({ listingId: id, rating: "0", comment: "" }).success, false);
+  assert.equal(reviewSchema.safeParse({ listingId: id, rating: "6", comment: "" }).success, false);
+  assert.equal(reviewSchema.safeParse({ listingId: id, rating: "x", comment: "" }).success, false);
+  assert.equal(reviewSchema.safeParse({ listingId: id, rating: "5", comment: "ok" }).success, false);
+  assert.equal(reviewSchema.safeParse({ listingId: id, rating: "5", comment: "a".repeat(501) }).success, false);
+  assert.equal(reviewSchema.safeParse({ listingId: "bukan-uuid", rating: "5", comment: "" }).success, false);
 });

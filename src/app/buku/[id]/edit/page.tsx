@@ -12,7 +12,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
 
   const { data: l } = await supabase
     .from("listings")
-    .select("id, owner_id, title, author, course_name_snapshot, study_program_id, semester, condition, offer_type, price, swap_wish, notes, status, hidden_at")
+    .select("id, owner_id, format, study_program_other, title, author, course_name_snapshot, study_program_id, semester, condition, offer_type, price, swap_wish, notes, status, hidden_at")
     .eq("id", id).maybeSingle();
   if (!l || l.owner_id !== user.id) notFound();
 
@@ -38,13 +38,15 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
       <EditForm
         id={l.id}
         programs={programs ?? []}
+        isEbook={l.format === "ebook"}
         initial={{
           title: l.title,
           author: l.author ?? "",
           course: l.course_name_snapshot,
           studyProgramId: String(l.study_program_id),
+          studyProgramOther: l.study_program_other ?? "",
           semester: l.semester ? String(l.semester) : "",
-          condition: l.condition,
+          condition: l.condition ?? "",
           offerType: l.offer_type,
           price: l.price ? String(l.price) : "",
           swapWish: l.swap_wish ?? "",

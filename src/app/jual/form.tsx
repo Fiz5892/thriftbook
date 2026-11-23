@@ -5,11 +5,14 @@ import imageCompression from "browser-image-compression";
 import { createListing, type ListingFormState } from "./actions";
 import {
   CONDITIONS, CONDITION_LABEL, CONDITION_HELP, OFFER_TYPES, OFFER_LABEL,
+  BOOK_FORMATS, FORMAT_LABEL, OTHER_PROGRAM_SLUG, MAX_EBOOK_BYTES,
 } from "@/lib/schemas";
+import { createClient } from "@/lib/supabase/client";
 import { photoUrl } from "@/lib/format";
 import { DRAFT_KEY, DRAFT_FIELDS, DRAFT_RADIOS } from "@/lib/draft";
 
 type Photo = { id: string; thumb: string };
+type Ebook = { path: string; name: string; size: number };
 const MAX_INPUT = 10 * 1024 * 1024;
 const input = "input";
 
@@ -17,11 +20,18 @@ export function ListingForm({
   programs,
   defaultProgramId,
 }: {
-  programs: { id: number; short_name: string }[];
+  programs: { id: number; slug: string; short_name: string }[];
   defaultProgramId?: number;
 }) {
   const [state, action, pending] = useActionState<ListingFormState, FormData>(createListing, {});
+  const v0 = state.values ?? {};
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [format, setFormat] = useState<string>("fisik");
+  const [ebook, setEbook] = useState<Ebook | null>(null);
+  const [ebookUploading, setEbookUploading] = useState(false);
+  const [ebookError, setEbookError] = useState<string | null>(null);
+  const ebookRef = useRef<HTMLInputElement>(null);
+  const [progId, setProgId] = useState<string>(String(v0.studyProgramId ?? defaultProgramId ?? ""));
   const [offer, setOffer] = useState<string>("");
   const [condition, setCondition] = useState<string>("");
   const [uploading, setUploading] = useState(false);
@@ -39,6 +49,8 @@ export function ListingForm({
     setSeen(state);
     if (state.values?.condition) setCondition(state.values.condition);
     if (state.values?.offerType) setOffer(state.values.offerType);
+    if (state.values?.format) setFormat(state.values.format);
+    if (state.values?.studyProgramId) setProgId(state.values.studyProgramId);
   }
 
   // AC-04.9: pulihkan draf teks jika koneksi/halaman terputus. DOM ditulis langsung (bukan
@@ -58,6 +70,8 @@ export function ListingForm({
         if (!d[k]) continue;
         form.querySelector<HTMLInputElement>(`input[name="${k}"][value="${CSS.escape(d[k])}"]`)?.click();
       }
+      // select dipulihkan lewat DOM; beri tahu React agar kolom "Lainnya" ikut menyesuaikan
+      form.querySelector("select[name=studyProgramId]")?.dispatchEvent(new Event("change", { bubbles: true }));
     } catch {
       // draf rusak atau localStorage diblokir: abaikan
     }
@@ -95,7 +109,7 @@ export function ListingForm({
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const FIELD_LABEL: Record<string, string> = {
-    photoIds: "Foto", title: "Judul buku", course: "Mata kuliah", studyProgramId: "Prodi",
+    photoIds: "Foto", ebookPath: "File PDF", studyProgramOther: "Nama prodi", format: "Format", title: "Judul buku", course: "Mata kuliah", studyProgramId: "Prodi",
     condition: "Kondisi", offerType: "Mau diapakan", price: "Harga", swapWish: "Ingin ditukar dengan",
     authenticity: "Pernyataan keaslian", semester: "Semester", author: "Penulis", notes: "Catatan",
   };
@@ -137,10 +151,89 @@ export function ListingForm({
     }
   }
 
+  async function onPickPdf(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setEbookError(null);
+    if (file.size > MAX_EBOOK_BYTES) return setEbookError("PDF-nya kebesaran. Maksimal 20 MB.");
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      return setEbookError("Pilih file berformat PDF.");
+    }
+    setEbookUploading(true);
+    try {
+      // 1) minta URL unggah dari server (cek login + batas), 2) unggah langsung ke Storage
+      const res = await fetch("/api/ebooks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ size: file.size }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message ?? "PDF-nya gagal keunggah.");
+      const up = await createClient().storage
+        .from("ebooks").uploadToSignedUrl(json.path, json.token, file, { contentType: "application/pdf" });
+      if (up.error) throw new Error("PDF-nya gagal keunggah. Cek sinyalmu, lalu coba lagi.");
+      setEbook({ path: json.path, name: file.name, size: file.size });
+    } catch (err) {
+      setEbookError(err instanceof Error ? err.message : "PDF-nya gagal keunggah. Coba lagi.");
+    } finally {
+      setEbookUploading(false);
+    }
+  }
+
+  const isEbook = format === "ebook";
+  const isOther = programs.find((p) => String(p.id) === progId)?.slug === OTHER_PROGRAM_SLUG;
+  const offerTypes = isEbook ? OFFER_TYPES.filter((t) => t !== "tukar") : OFFER_TYPES;
+
   return (
     <form ref={formRef} action={action} onChange={saveDraft} className="mt-6 flex flex-col gap-5" noValidate>
       <fieldset>
-        <legend className="font-semibold">Foto (1–3)</legend>
+        <legend className="font-semibold">Mau pasang apa?</legend>
+        <div className="mt-2 flex gap-2">
+          {BOOK_FORMATS.map((f) => (
+            <label key={f} className="option min-h-11 flex-1 items-center justify-center text-center text-sm font-semibold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-navy-600">
+              <input type="radio" name="format" value={f} checked={format === f}
+                onChange={() => { setFormat(f); if (f === "ebook" && offer === "tukar") setOffer(""); }}
+                className="sr-only" />
+              {FORMAT_LABEL[f]}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {isEbook && (
+        <fieldset>
+          <legend className="font-semibold">File PDF (maks 20 MB)</legend>
+          {ebook ? (
+            <div className="card mt-2 flex items-center justify-between gap-3 px-4 py-3">
+              <p className="min-w-0 text-sm">
+                <span className="block truncate font-semibold">{ebook.name}</span>
+                <span className="text-muted">{(ebook.size / 1024 / 1024).toFixed(1)} MB · terunggah</span>
+              </p>
+              <button type="button" onClick={() => setEbook(null)} className="btn btn-sm btn-outline">Ganti</button>
+              <input type="hidden" name="ebookPath" value={ebook.path} />
+            </div>
+          ) : (
+            <button
+              type="button" disabled={ebookUploading} onClick={() => ebookRef.current?.click()}
+              className="mt-2 flex min-h-20 w-full items-center justify-center rounded-[18px] border-2 border-dashed border-ink bg-paper px-2 text-center text-sm font-semibold text-ink hover:bg-yellow-400 disabled:opacity-60"
+            >
+              {ebookUploading ? "Mengunggah PDF…" : "Pilih file PDF"}
+            </button>
+          )}
+          <input ref={ebookRef} type="file" accept="application/pdf,.pdf" onChange={onPickPdf}
+            className="hidden" aria-label="Pilih file PDF" />
+          <p className="mt-1 text-sm text-muted">
+            Tim kami memeriksa file dan hak ciptanya dulu sebelum e-book tampil di katalog.
+          </p>
+          {(ebookError || fe.ebookPath) && (
+            <p role="alert" className="mt-1 text-sm text-danger">{ebookError ?? fe.ebookPath}</p>
+          )}
+        </fieldset>
+      )}
+
+      <fieldset>
+        <legend className="font-semibold">{isEbook ? "Foto sampul (opsional, maks 3)" : "Foto (1–3)"}</legend>
         <div className="mt-2 flex flex-wrap gap-3">
           {photos.map((p, i) => (
             <div key={p.id} className="card relative size-24 overflow-hidden">
@@ -210,7 +303,8 @@ export function ListingForm({
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1">
           <span className="font-semibold">Prodi</span>
-          <select name="studyProgramId" defaultValue={v.studyProgramId ?? defaultProgramId ?? ""} className={input}>
+          <select name="studyProgramId" defaultValue={v.studyProgramId ?? defaultProgramId ?? ""} className={input}
+            onChange={(e) => setProgId(e.target.value)}>
             <option value="" disabled>Pilih</option>
             {programs.map((p) => <option key={p.id} value={p.id}>{p.short_name}</option>)}
           </select>
@@ -225,6 +319,15 @@ export function ListingForm({
         </label>
       </div>
 
+      {/* Tetap ada di DOM (hidden) agar pemulihan draf bisa mengisinya */}
+      <label className={isOther ? "flex flex-col gap-1" : "hidden"}>
+        <span className="font-semibold">Nama prodimu</span>
+        <input name="studyProgramOther" defaultValue={v.studyProgramOther} maxLength={60}
+          className={input} placeholder="Mis. Pendidikan Sejarah" />
+        {fe.studyProgramOther && <span role="alert" className="text-sm text-danger">{fe.studyProgramOther}</span>}
+      </label>
+
+      {!isEbook && (
       <fieldset>
         <legend className="font-semibold">Kondisi</legend>
         <div className="mt-2 flex flex-col gap-2">
@@ -241,15 +344,16 @@ export function ListingForm({
         </div>
         {fe.condition && <span role="alert" className="text-sm text-danger">{fe.condition}</span>}
       </fieldset>
+      )}
 
       <fieldset>
         <legend className="font-semibold">Mau diapakan?</legend>
         <div className="mt-2 flex gap-2">
-          {OFFER_TYPES.map((t) => (
+          {offerTypes.map((t) => (
             <label key={t} className="option min-h-11 flex-1 items-center justify-center text-center text-sm font-semibold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-navy-600">
               <input type="radio" name="offerType" value={t} checked={offer === t}
                 onChange={() => setOffer(t)} className="sr-only" />
-              {OFFER_LABEL[t]}
+              {isEbook && t === "hibah" ? "Gratis" : OFFER_LABEL[t]}
             </label>
           ))}
         </div>
@@ -280,7 +384,11 @@ export function ListingForm({
 
       <label className="flex items-start gap-3">
         <input type="checkbox" name="authenticity" defaultChecked={v.authenticity === "on"} className="mt-1 check" />
-        <span>Ini buku fisik asli, bukan fotokopi, cetak ulang, atau file PDF.</span>
+        <span>
+          {isEbook
+            ? "Aku berhak membagikan file ini (karyaku sendiri, berlisensi terbuka, atau ada izin penulis/penerbit), bukan hasil bajakan."
+            : "Ini buku fisik asli, bukan fotokopi, cetak ulang, atau file PDF."}
+        </span>
       </label>
       {fe.authenticity && <span role="alert" className="-mt-3 text-sm text-danger">{fe.authenticity}</span>}
 
@@ -301,9 +409,9 @@ export function ListingForm({
         )}
       </div>
 
-      <button disabled={pending || uploading}
+      <button disabled={pending || uploading || ebookUploading}
         className="btn btn-yellow disabled:opacity-60">
-        {pending ? "Memposting…" : "Terbitkan"}
+        {pending ? "Memposting…" : isEbook ? "Kirim untuk ditinjau" : "Terbitkan"}
       </button>
     </form>
   );

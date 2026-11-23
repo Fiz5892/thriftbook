@@ -174,13 +174,17 @@ grant  execute on function public.can_review_listing(uuid) to authenticated;
 alter table public.reviews enable row level security;
 
 -- Terbaca bila listing induknya terbaca (RLS listings berlaku di subquery)
+drop policy if exists reviews_read on public.reviews;
 create policy reviews_read on public.reviews for select using (
   exists (select 1 from public.listings l where l.id = listing_id)
 );
+drop policy if exists reviews_insert on public.reviews;
 create policy reviews_insert on public.reviews for insert to authenticated
   with check (reviewer_id = auth.uid() and public.can_review_listing(listing_id));
+drop policy if exists reviews_update_own on public.reviews;
 create policy reviews_update_own on public.reviews for update to authenticated
   using (reviewer_id = auth.uid() and public.is_active_user())
   with check (reviewer_id = auth.uid() and public.can_review_listing(listing_id));
+drop policy if exists reviews_delete on public.reviews;
 create policy reviews_delete on public.reviews for delete to authenticated
   using (reviewer_id = auth.uid() or public.is_admin());

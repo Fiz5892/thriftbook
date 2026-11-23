@@ -28,7 +28,7 @@ bukti yang ada; yang tertulis "belum" memang belum pernah dijalankan.
 | FR-22 | PWA (manifest, ikon, service worker offline) | Manifest ter-build; **instal & service worker di produksi belum diuji** |
 | FR-23 | Event metrik (termasuk `search_performed` tanpa identitas) | Browser + DB |
 | FR-24 | Chip "Mata kuliah terbanyak" | Kode ada; tidak punya tes otomatis |
-| FR-25 | Ulasan + rating 1–5 di halaman buku (buku fisik: hanya yang BELUM membuka kontak WA; e-book: hanya yang sudah checkout; ubah/hapus milik sendiri) | Skema Zod diuji. **RLS `reviews` dan alur di browser belum diuji** (butuh migrasi 0004) |
+| FR-25 | Ulasan + rating 1–5 di halaman buku (buku fisik: semua pengguna login non-pemilik, tanpa perlu WA dulu; e-book: hanya yang sudah checkout; ubah/hapus milik sendiri) | Skema Zod diuji. **RLS `reviews` dan alur di browser belum diuji** (butuh migrasi 0004) |
 | FR-26 | E-book PDF: unggah (URL bertanda tangan, cek `%PDF-` di server), tinjauan admin (hak cipta), checkout tanpa WA, baca/unduh lewat tautan 60 detik, filter format di Cari | Skema Zod diuji. **Alur unggah/checkout/tinjauan belum dijalankan** |
 | FR-27 | Prodi tambahan + "Lainnya" dengan isian bebas (jual/edit) | Skema Zod diuji. **Daftar prodi belum dicocokkan dengan sumber resmi UM** |
 

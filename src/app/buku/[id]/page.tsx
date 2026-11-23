@@ -271,9 +271,7 @@ export default async function BukuPage({
       <Reviews
         listingId={l.id} reviews={reviews} names={names} userId={userId} isOwner={isOwner}
         canReview={canReviewRes.data === true}
-        hint={isEbook
-          ? "Checkout e-book ini dulu untuk memberi ulasan."
-          : "Ulasan hanya untuk yang belum menghubungi penjual lewat WhatsApp."}
+        hint="Checkout e-book ini dulu untuk memberi ulasan."
       />
     </main>
   );

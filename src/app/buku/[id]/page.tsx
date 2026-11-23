@@ -222,7 +222,7 @@ export default async function BukuPage({
         {sold ? (
           <p className="card px-4 py-3 text-muted">Buku ini sudah tidak tersedia.</p>
         ) : isOwner ? (
-          <OwnerControls id={l.id} status={l.status} expired={expired} isEbook={isEbook} />
+          <OwnerControls id={l.id} status={l.status} expired={expired} isEbook={isEbook} free={l.offer_type === "hibah"} />
         ) : isEbook ? (
           <EbookBox id={l.id} price={l.price} hasAccess={hasAccess} loggedIn={!!userId} />
         ) : reserved ? (
@@ -309,7 +309,7 @@ function EbookBox({ id, price, hasAccess, loggedIn }: {
   );
 }
 
-function OwnerControls({ id, status, expired, isEbook }: { id: string; status: string; expired: boolean; isEbook: boolean }) {
+function OwnerControls({ id, status, expired, isEbook, free }: { id: string; status: string; expired: boolean; isEbook: boolean; free: boolean }) {
   const STATUS: Record<string, { label: string; dot: string }> = {
     aktif: { label: "Tersedia", dot: "bg-mint" },
     dipesan: { label: "Dipesan", dot: "bg-orange" },
@@ -374,7 +374,9 @@ function OwnerControls({ id, status, expired, isEbook }: { id: string; status: s
             </button>
           </form>
         )}
-        {!expired && <DoneChoice id={id} action={setListingStatus} />}
+        {!expired && (
+          <DoneChoice id={id} action={setListingStatus} direct={isEbook ? "thriftbook" : free ? "tidak_dijawab" : undefined} />
+        )}
       </div>
     </section>
   );

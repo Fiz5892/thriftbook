@@ -103,7 +103,7 @@ export default async function AkunPage() {
                       </button>
                     </form>
                   )}
-                  <DoneChoice id={l.id} action={setListingStatus} compact />
+                  <DoneChoice id={l.id} action={setListingStatus} compact direct={l.offer_type === "hibah" ? "tidak_dijawab" : undefined} />
                 </div>
               )}
             </li>

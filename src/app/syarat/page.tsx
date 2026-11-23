@@ -38,7 +38,7 @@ export default function Syarat() {
               membagikannya. Setiap e-book diperiksa tim (file dan hak cipta) sebelum tampil di katalog.
             </li>
             <li>
-              Ulasan hanya untuk pengguna yang pernah menghubungi penjual atau checkout e-book. Tulis jujur
+              Ulasan buku fisik hanya untuk pengguna yang belum menghubungi penjual lewat WhatsApp; ulasan e-book hanya untuk yang sudah checkout. Tulis jujur
               dan sopan; ulasan yang melanggar bisa dihapus moderator.
             </li>
           </ul>

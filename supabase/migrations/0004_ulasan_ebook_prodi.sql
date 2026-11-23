@@ -158,8 +158,9 @@ drop trigger if exists reviews_touch on public.reviews;
 create trigger reviews_touch before update on public.reviews
   for each row execute function public.touch_updated_at();
 
--- Siapa boleh mengulas: bukan pemilik, dan pernah benar-benar berinteraksi
---   fisik  → pernah membuka kontak WhatsApp penjual (contact_reveals)
+-- Siapa boleh mengulas: bukan pemilik.
+--   fisik  → HANYA yang BELUM membuka kontak WhatsApp penjual (yang sudah lanjut ke WhatsApp
+--            tidak membuat ulasan di sini)
 --   e-book → sudah checkout (ebook_orders berstatus lunas)
 create or replace function public.can_review_listing(p_listing uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
@@ -173,7 +174,7 @@ language sql stable security definer set search_path = '' as $$
           select 1 from public.ebook_orders o
           where o.listing_id = l.id and o.buyer_id = auth.uid() and o.status = 'lunas'))
         or
-        (l.format = 'fisik' and exists (
+        (l.format = 'fisik' and not exists (
           select 1 from public.contact_reveals c
           where c.listing_id = l.id and c.viewer_id = auth.uid()))
       )

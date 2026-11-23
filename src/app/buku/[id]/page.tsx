@@ -273,7 +273,7 @@ export default async function BukuPage({
         canReview={canReviewRes.data === true}
         hint={isEbook
           ? "Checkout e-book ini dulu untuk memberi ulasan."
-          : "Kamu bisa mengulas setelah menghubungi penjual lewat WhatsApp."}
+          : "Ulasan hanya untuk yang belum menghubungi penjual lewat WhatsApp."}
       />
     </main>
   );

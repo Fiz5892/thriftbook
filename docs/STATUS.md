@@ -29,15 +29,15 @@ bukti yang ada; yang tertulis "belum" memang belum pernah dijalankan.
 | FR-23 | Event metrik (termasuk `search_performed` tanpa identitas) | Browser + DB |
 | FR-24 | Chip "Mata kuliah terbanyak" | Kode ada; tidak punya tes otomatis |
 | FR-25 | Ulasan + rating 1–5 di halaman buku (buku fisik: semua pengguna login non-pemilik, tanpa perlu WA dulu; e-book: hanya yang sudah checkout; ubah/hapus milik sendiri) | Skema Zod diuji. **RLS `reviews` dan alur di browser belum diuji** (butuh migrasi 0004) |
-| FR-26 | E-book PDF: unggah (URL bertanda tangan, cek `%PDF-` di server), tinjauan admin (hak cipta), checkout tanpa WA, baca/unduh lewat tautan 60 detik, filter format di Cari | Skema Zod diuji. **Alur unggah/checkout/tinjauan belum dijalankan** |
+| FR-26 | E-book PDF: unggah (URL bertanda tangan, cek `%PDF-` di server), tayang langsung (diturunkan admin bila ada laporan), checkout tanpa WA, baca/unduh lewat tautan 60 detik, filter format di Cari | Skema Zod diuji. **Alur unggah/checkout belum dijalankan** |
 | FR-27 | Prodi tambahan + "Lainnya" dengan isian bebas (jual/edit) | Skema Zod diuji. **Daftar prodi belum dicocokkan dengan sumber resmi UM** |
 
 ### Catatan fitur baru (migrasi `supabase/migrations/0004_ulasan_ebook_prodi.sql`)
 
 - Jalankan 0004 di Supabase sebelum rilis. Migrasi ini membuat bucket privat `ebooks`, tabel `reviews`,
-  `ebook_orders`, `ebook_uploads`, kolom `listings.format/ebook_path/study_program_other`, dan trigger
-  yang membuat e-book baru otomatis tersembunyi (`menunggu_tinjauan_ebook`) sampai admin menyetujuinya
-  lewat "Setujui & tampilkan" di `/admin`.
+  `ebook_orders`, `ebook_uploads`, kolom `listings.format/ebook_path/study_program_other`, dan
+  kebijakan RLS-nya. E-book langsung tampil saat diposting; pelanggaran hak cipta ditangani lewat laporan
+  dan "Sembunyikan" di `/admin` (3 pelapor berbeda juga menyembunyikannya otomatis).
 - **Checkout e-book berbayar belum aktif**: belum ada penyedia pembayaran. E-book gratis langsung memberi
   hak baca; e-book berbayar menampilkan pesan "pembayaran belum tersedia" dan tidak memberi akses.
 - Batas PDF 20 MB (sama di klien, route, dan bucket). Cron `maintenance` membuang PDF yang diunggah tapi

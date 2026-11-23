@@ -224,7 +224,7 @@ export function ListingForm({
           <input ref={ebookRef} type="file" accept="application/pdf,.pdf" onChange={onPickPdf}
             className="hidden" aria-label="Pilih file PDF" />
           <p className="mt-1 text-sm text-muted">
-            Tim kami memeriksa file dan hak ciptanya dulu sebelum e-book tampil di katalog.
+            E-book langsung tampil di katalog. Pastikan kamu berhak membagikannya; e-book yang dilaporkan melanggar hak cipta akan diturunkan.
           </p>
           {(ebookError || fe.ebookPath) && (
             <p role="alert" className="mt-1 text-sm text-danger">{ebookError ?? fe.ebookPath}</p>
@@ -411,7 +411,7 @@ export function ListingForm({
 
       <button disabled={pending || uploading || ebookUploading}
         className="btn btn-yellow disabled:opacity-60">
-        {pending ? "Memposting…" : isEbook ? "Kirim untuk ditinjau" : "Terbitkan"}
+        {pending ? "Memposting…" : "Terbitkan"}
       </button>
     </form>
   );

@@ -172,7 +172,11 @@ export function ListingForm({
       if (!res.ok) throw new Error(json.message ?? "PDF-nya gagal keunggah.");
       const up = await createClient().storage
         .from("ebooks").uploadToSignedUrl(json.path, json.token, file, { contentType: "application/pdf" });
-      if (up.error) throw new Error("PDF-nya gagal keunggah. Cek sinyalmu, lalu coba lagi.");
+      if (up.error) {
+        console.error("Unggah PDF gagal:", up.error);
+        // Sertakan alasan dari Storage (mis. "Bucket not found", ukuran/tipe ditolak) agar mudah dilacak
+        throw new Error(`PDF-nya gagal keunggah (${up.error.message}). Cek sinyalmu, lalu coba lagi.`);
+      }
       setEbook({ path: json.path, name: file.name, size: file.size });
     } catch (err) {
       setEbookError(err instanceof Error ? err.message : "PDF-nya gagal keunggah. Coba lagi.");
